@@ -1,2 +1,4 @@
 # softwareRendering
-A simple software/cpu based render engine.
+A low-level, simple software/cpu based render engine. 
+ - Uses SDL.
+ - Written in C.
