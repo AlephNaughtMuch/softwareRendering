@@ -13,6 +13,7 @@ SDL_Renderer* renderer = NULL;
 uint32_t* color_buffer = NULL;
 
 // Init window resolution
+int window_size_factor = 4;
 int window_width = 800;
 int window_height = 600;
 
@@ -26,6 +27,14 @@ bool initialize_window(void) {
         fprintf(stderr, "Error initializing SDL.\n");
         return false;
     }
+
+    // Dynamically get monitor resolution
+    SDL_DisplayMode display_mode;
+    SDL_GetCurrentDisplayMode(0, &display_mode);
+
+    window_width = (int) (display_mode.w / window_size_factor);
+    window_height = (int) (display_mode.h / window_size_factor);
+
 
     // Create a SDL Window
     window = SDL_CreateWindow("SoftwareRenderer", SDL_WINDOWPOS_CENTERED, 
@@ -56,6 +65,7 @@ void setup (void) {
 
 }
 
+
 void process_input(void) {
     SDL_Event event;
     SDL_PollEvent(&event);
@@ -69,6 +79,17 @@ void process_input(void) {
             if (event.key.keysym.sym == SDLK_ESCAPE)
                 is_running = false;
         break;
+    }
+
+}
+
+void draw_grid(void) {
+    for (int y = 0; y < window_height; y++) {
+        for (int x = 0; x < window_width; x++) {
+            if (y % 10 == 0 || x % 10 == 0) {
+                color_buffer[(window_width * y) + x] = 0xFFFFFFFF;
+            }
+        }
     }
 
 }
@@ -94,8 +115,9 @@ void clear_color_buffer(uint32_t color) {
 void render(void) {
     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
     SDL_RenderClear(renderer);
+    draw_grid();
     render_color_buffer();
-    clear_color_buffer(0xFFFFFF00);
+    clear_color_buffer(0x00000000);
     SDL_RenderPresent(renderer);
 
 }
