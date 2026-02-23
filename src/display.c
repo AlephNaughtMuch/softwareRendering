@@ -52,7 +52,7 @@ bool initialize_window(void) {
 }
 
 void draw_pixel(int x, int y, uint32_t color) {
-    if (x < window_width && y < window_height) {
+    if (x >= 0 && x < window_width &&  y >= 0 && y < window_height) {
         color_buffer[(window_width * y) + x] = color;
     }
 }
@@ -68,11 +68,21 @@ void draw_grid(void) {
 }
 
 void draw_rect(int x, int y, int width, int height, uint32_t color) {
-    for (int p_y = y; p_y < window_height; p_y++) {
-        for (int p_x = x; p_x < window_width; p_x++) {
-            if ((p_x <= x + width) && (p_y <= y + height)) {
-                color_buffer[(window_width * p_y) + p_x] = color;
-            }
+    int x0 = x;
+    int y0 = y;
+    int x1 = x + width;
+    int y1 = y + height;
+
+    if (x0 < 0) x0 = 0;
+    if (y0 < 0) y0 = 0;
+    if (x1 > window_width)  x1 = window_width;
+    if (y1 > window_height) y1 = window_height;
+
+    for (int py = y0; py < y1; py++) {
+        int row = py * window_width;
+        for (int px = x0; px < x1; px++) {
+            // faster than calling draw_pixel
+            color_buffer[row + px] = color; 
         }
     }
 }
