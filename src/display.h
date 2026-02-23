@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <SDL2/SDL.h>
 
+// Init SDL Window and Renderer
 extern SDL_Window* window;
 extern SDL_Renderer* renderer;
 
@@ -20,6 +21,7 @@ extern int window_height;
 extern SDL_Texture* color_buffer_texture;
 
 bool initialize_window(void);
+void draw_pixel(int x, int y, uint32_t color);
 void draw_grid(void);
 void draw_rect(int x, int y, int width, int height, uint32_t color);
 void clear_color_buffer(uint32_t color);

@@ -4,7 +4,7 @@
 #include <SDL2/SDL.h>
 #include "display.h"
 
-// Init Window and renderer
+// Init bool to run the render loop on
 bool is_running = false;
 
 void setup (void) {
@@ -42,6 +42,7 @@ void render(void) {
     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
     SDL_RenderClear(renderer);
     draw_grid();
+    draw_pixel(20, 20, 0xFFFFFF00);
     draw_rect((int) window_width/2, (int) window_height/2, 300, 150, 0xFF550055);
     render_color_buffer();
     clear_color_buffer(0xFF000000);
@@ -59,7 +60,6 @@ int main(void) {
         update();
         render();
     }
-
 
     destroy_window();
 
