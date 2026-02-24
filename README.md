@@ -15,7 +15,6 @@ technical art graphics programming**.
 
 -   SDL2 window + renderer initialization
 -   CPU color buffer rendering pipeline
--   Texture upload to GPU via `SDL_UpdateTexture`
 -   Perspective projection of 3D points → 2D screen space
 -   Procedural 3D cube point cloud (9×9×9 grid)
 -   Grid overlay rendering
