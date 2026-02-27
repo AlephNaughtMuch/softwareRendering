@@ -13,8 +13,8 @@ uint32_t* color_buffer = NULL;
 
 // Init window resolution
 int window_size_factor = 2;
-int window_width = 800;
-int window_height = 600;
+int window_width = 1920;
+int window_height = 1080;
 
 bool initialize_window(void) {
     
@@ -58,11 +58,11 @@ void draw_pixel(int x, int y, uint32_t color) {
 }
 
 void draw_grid(void) {
-    for (int y = 0; y < window_height; y++) {
-        for (int x = 0; x < window_width; x++) {
-            if (y % 10 == 0 || x % 10 == 0) {
-                color_buffer[(window_width * y) + x] = 0xFF333333;
-            }
+    for (int y = 0; y < window_height; y += 10) {
+        for (int x = 0; x < window_width; x += 10) {
+            // if (y % 10 == 0 || x % 10 == 0) {
+            color_buffer[(window_width * y) + x] = 0xFF333333;
+            // }
         }
     }
 }
@@ -104,6 +104,12 @@ void draw_line(int x0, int y0, int x1, int y1, uint32_t color) {
         current_x += x_inc;
         current_y += y_inc;
     }
+}
+
+void draw_triangle(int x0, int y0, int x1, int y1, int x2, int y2, uint32_t color) {
+    draw_line(x0, y0, x1, y1, color);
+    draw_line(x1, y1, x2, y2, color);
+    draw_line(x2, y2, x0, y0, color);
 }
 
 void render_color_buffer(void) {
