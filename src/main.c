@@ -15,6 +15,8 @@ triangle_t* triangles_to_render = NULL;
 
 vec3_t camera_position = { .x = 0, .y = 0, .z = -5 };
 
+char* mesh_location = "";
+
 float fov_factor = 128;
 
 // Init bool to run the render loop on
@@ -30,7 +32,8 @@ void setup (void) {
         SDL_TEXTUREACCESS_STREAMING, window_width, window_height);
     
     // Loads the cube values in the mesh data structure
-    load_cube_mesh_data();
+    // load_cube_mesh_data();
+    load_obj_file_data(mesh_location);
 }
 
 void process_input(void) {

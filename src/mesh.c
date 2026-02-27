@@ -55,3 +55,12 @@ void load_cube_mesh_data(void) {
         array_push(mesh.faces, cube_face);
     }
 }
+
+void load_obj_file_data(char* filename) {
+    // TODO:
+    // Read obj from disk and load them into
+    // the mesh struct like the hard
+    // coded cube.
+
+    
+}
