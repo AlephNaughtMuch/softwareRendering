@@ -18,6 +18,7 @@ float fov_factor = 640;
 
 // Init bool to run the render loop on
 bool is_running = false;
+int previous_frame_time = 0;
 
 void setup (void) {
     // Allocate the required memory in btyes to hold the color buffer
@@ -75,9 +76,20 @@ vec2_t project(vec3_t point) {
 
 void update(void) {
     
-    cube_rotation.y += 0.001;
-    cube_rotation.z += 0.001;
-    cube_rotation.x += 0.001;
+    // while (!(SDL_TICKS_PASSED(SDL_GetTicks(), 
+    //     previous_frame_time + FRAME_TARGET_TIME)));  
+
+    int time_to_wait = FRAME_TARGET_TIME - (SDL_GetTicks() - previous_frame_time);
+
+    if (time_to_wait > 0 && time_to_wait <= FRAME_TARGET_TIME) {
+        SDL_Delay(time_to_wait);
+    }
+
+    previous_frame_time = SDL_GetTicks();
+
+    cube_rotation.y += 0.01;
+    cube_rotation.z += 0.01;
+    cube_rotation.x += 0.01;
 
     for (int i = 0; i < N_POINTS; i++) {
         vec3_t point = cube_points[i];
