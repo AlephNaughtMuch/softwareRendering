@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <SDL2/SDL.h>
 
+#include "array.h"
 #include "display.h"
 #include "vector.h"
 #include "mesh.h"
@@ -10,12 +11,12 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Declare an array of vectors/points
 //////////////////////////////////////////////////////////////////////////////////////////////
-triangle_t triangles_to_render[N_MESH_FACES];
+triangle_t* triangles_to_render = NULL;
 
 vec3_t camera_position = { .x = 0, .y = 0, .z = -5 };
 vec3_t cube_rotation = { .x = 0, .y = 0, .z = 0 };
 
-float fov_factor = 640;
+float fov_factor = 128;
 
 // Init bool to run the render loop on
 bool is_running = false;
@@ -28,9 +29,6 @@ void setup (void) {
     // Create a SDL texture that is used to display the color buffer
     color_buffer_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, 
         SDL_TEXTUREACCESS_STREAMING, window_width, window_height);
-
-
-
 }
 
 void process_input(void) {
@@ -57,23 +55,24 @@ void process_input(void) {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 vec2_t project(vec3_t point) {
     vec2_t projected_point = { 
-        .x = (fov_factor  * point.x) / (point.z + 0.0000001f), 
-        .y = (fov_factor * point.y) / (point.z + 0.0000001f) 
+        .x = (fov_factor  * point.x),// / (point.z + 0.0000001f), 
+        .y = (fov_factor * point.y),// / (point.z + 0.0000001f) 
     };
     
     return projected_point;
 }
 
 void update(void) {
-    
-    // while (!(SDL_TICKS_PASSED(SDL_GetTicks(), 
-    //     previous_frame_time + FRAME_TARGET_TIME)));  
 
     int time_to_wait = FRAME_TARGET_TIME - (SDL_GetTicks() - previous_frame_time);
 
     if (time_to_wait > 0 && time_to_wait <= FRAME_TARGET_TIME) {
         SDL_Delay(time_to_wait);
     }
+
+    // Initialize the array of triangles to render
+    triangles_to_render = NULL;
+
 
     previous_frame_time = SDL_GetTicks();
 
@@ -113,7 +112,8 @@ void update(void) {
         }
         
         // Save the projected triangles in the array of triangles
-        triangles_to_render[i] = projected_triangle;
+        // triangles_to_render[i] = projected_triangle;
+        array_push(triangles_to_render, projected_triangle);
     }
 
 }
@@ -122,7 +122,8 @@ void render(void) {
     draw_grid();
 
     // Loop all projected triangles and render them
-    for (int i = 0; i < N_MESH_FACES; i++) {
+    int num_triangles = array_length(triangles_to_render);
+    for (int i = 0; i < num_triangles; i++) {
         triangle_t triangle = triangles_to_render[i];
         draw_triangle(
             triangle.points[0].x,
@@ -133,11 +134,13 @@ void render(void) {
 
             triangle.points[2].x,
             triangle.points[2].y,
-            
+
             0xFF00FFFF
         );
     }
-    
+    // Clear the array of triangles to render every frame loop
+    array_free(triangles_to_render);
+
     render_color_buffer();
     clear_color_buffer(0xFF000000);
     SDL_RenderPresent(renderer);
