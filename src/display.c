@@ -12,7 +12,7 @@ SDL_Texture* color_buffer_texture = NULL;
 uint32_t* color_buffer = NULL;
 
 // Init window resolution
-int window_size_factor = 4;
+int window_size_factor = 2;
 int window_width = 800;
 int window_height = 600;
 
@@ -84,6 +84,25 @@ void draw_rect(int x, int y, int width, int height, uint32_t color) {
             // faster than calling draw_pixel
             color_buffer[row + px] = color; 
         }
+    }
+}
+
+void draw_line(int x0, int y0, int x1, int y1, uint32_t color) {
+    int delta_x = x1 - x0;
+    int delta_y = y1 - y0;
+
+    int side_length = abs(delta_x) >= abs(delta_y) ? abs(delta_x) : abs(delta_y);
+
+    float x_inc = delta_x / (float) side_length;
+    float y_inc = delta_y / (float) side_length;
+
+    float current_x = x0;
+    float current_y = y0;
+
+    for (int i = 0; i <= side_length; i++) {
+        draw_pixel(round(current_x), round(current_y), color);
+        current_x += x_inc;
+        current_y += y_inc;
     }
 }
 
