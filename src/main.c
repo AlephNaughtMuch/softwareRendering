@@ -15,9 +15,9 @@ triangle_t* triangles_to_render = NULL;
 
 vec3_t camera_position = { .x = 0, .y = 0, .z = -5 };
 
-char* mesh_location = "";
+char* mesh_location = "assets/f22.obj";
 
-float fov_factor = 128;
+float fov_factor = 256;
 
 // Init bool to run the render loop on
 bool is_running = false;
@@ -60,8 +60,8 @@ void process_input(void) {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 vec2_t project(vec3_t point) {
     vec2_t projected_point = { 
-        .x = (fov_factor  * point.x),// / (point.z + 0.0000001f), 
-        .y = (fov_factor * point.y),// / (point.z + 0.0000001f) 
+        .x = (fov_factor  * point.x), // / (point.z + 0.0000001f), 
+        .y = (fov_factor * point.y) /// (point.z + 0.0000001f) 
     };
     
     return projected_point;
@@ -81,14 +81,14 @@ void update(void) {
 
     previous_frame_time = SDL_GetTicks();
 
+    mesh.rotation.x = -3.15;
     mesh.rotation.y += 0.01;
-    mesh.rotation.z += 0.01;
-    mesh.rotation.x += 0.01;
+    mesh.rotation.z = 0;
 
     // Loop all triangle faces of our cube mesh
     for (int i = 0; i < array_length(mesh.faces); i++) {
         face_t mesh_face = mesh.faces[i];
-        
+
         vec3_t face_vertices[3];
         face_vertices[0] = mesh.vertices[mesh_face.a - 1];
         face_vertices[1] = mesh.vertices[mesh_face.b - 1];
