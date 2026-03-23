@@ -26,10 +26,6 @@ char* mesh_location = "assets/cube.obj";
 float fov_factor = 640;
 
 void setup (void) {
-    // // Init render mode and triangle culling method
-    // render_method = RENDER_WIRE;
-    // cull_method = CULL_BACKFACE;
-    
     // Allocate the required memory in btyes to hold the color buffer
     color_buffer = (uint32_t*) malloc(sizeof(uint32_t) * window_width * window_height);
     
@@ -38,8 +34,8 @@ void setup (void) {
         SDL_TEXTUREACCESS_STREAMING, window_width, window_height);
     
     // Loads the cube values in the mesh data structure
-    // load_cube_mesh_data();
-    load_obj_file_data(mesh_location);
+    load_cube_mesh_data();
+    // load_obj_file_data(mesh_location);
 }
 
 void process_input(void) {
@@ -158,18 +154,26 @@ void update(void) {
         }
 
         // Projection
-        triangle_t projected_triangle;
+        vec2_t projected_points[3];
 
         for (int j = 0; j < 3; j ++) {
-            vec2_t projected_point = project(transformed_vertices[j]);
+            projected_points[j] = project(transformed_vertices[j]);
 
             // Scale and translate the projected points to the middle of the screen
-            projected_point.x += (window_width / 2);
-            projected_point.y += (window_height / 2);
+            projected_points[j].x += (window_width / 2);
+            projected_points[j].y += (window_height / 2);
 
-            projected_triangle.points[j] = projected_point;
         }
-        
+
+        triangle_t projected_triangle = {
+            .points = {
+                { projected_points[0].x, projected_points[0].y },
+                { projected_points[1].x, projected_points[1].y },
+                { projected_points[2].x, projected_points[2].y }
+            },
+            .color = mesh_face.color
+        };
+
         // Save the projected triangles in the array of triangles
         array_push(triangles_to_render, projected_triangle);
     }
@@ -192,7 +196,7 @@ void render(void) {
                 triangle.points[1].y,
                 triangle.points[2].x,
                 triangle.points[2].y,
-                0xFF555555
+                triangle.color
             );
         }
 
