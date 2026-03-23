@@ -16,6 +16,10 @@ int window_size_factor = 2;
 int window_width = 1920;
 int window_height = 1080;
 
+// Define render method and culling
+render_method_t render_method = RENDER_WIRE;
+cull_method_t cull_method = CULL_BACKFACE;
+
 bool initialize_window(void) {
     
     // Init SDL
