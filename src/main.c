@@ -166,20 +166,28 @@ void render(void) {
     int num_triangles = array_length(triangles_to_render);
     for (int i = 0; i < num_triangles; i++) {
         triangle_t triangle = triangles_to_render[i];
+        draw_filled_triangle(
+            triangle.points[0].x,
+            triangle.points[0].y,
+            triangle.points[1].x,
+            triangle.points[1].y,
+            triangle.points[2].x,
+            triangle.points[2].y,
+            0xFFFFFFFF
+        );
         draw_triangle(
             triangle.points[0].x,
             triangle.points[0].y,
-
             triangle.points[1].x,
             triangle.points[1].y,
-
             triangle.points[2].x,
             triangle.points[2].y,
-
-            0xFF00FFFF
+            0xFF000000
         );
     }
 
+    // draw_filled_triangle(300, 100, 50, 400, 500, 700, 0xFF00FFFF);
+    array_free(triangles_to_render);
     render_color_buffer();
     clear_color_buffer(0xFF000000);
     SDL_RenderPresent(renderer);
