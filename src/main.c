@@ -122,7 +122,7 @@ void update(void) {
 
             // Translate the vertex away from the camera
             // transformed_vertex.z -= camera_position.z;
-            transformed_vertex.z += -5;
+            transformed_vertex.z += 5;
 
             // Store the transformed vertex 
             transformed_vertices[j] = transformed_vertex;
@@ -164,6 +164,9 @@ void update(void) {
             projected_points[j].y += (window_height / 2);
 
         }
+        
+        // Calculate the avg depth of each face based on the vertices after transformation
+        float avg_depth = (transformed_vertices[0].z + transformed_vertices[1].z + transformed_vertices[2].z) / 3.0;
 
         triangle_t projected_triangle = {
             .points = {
@@ -171,16 +174,57 @@ void update(void) {
                 { projected_points[1].x, projected_points[1].y },
                 { projected_points[2].x, projected_points[2].y }
             },
-            .color = mesh_face.color
+            .color = mesh_face.color,
+            .avg_depth = avg_depth
         };
 
         // Save the projected triangles in the array of triangles
         array_push(triangles_to_render, projected_triangle);
     }
+    
+    // Sort the triangles to render by their avg depth
+    int num_triangles = array_length(triangles_to_render);
+    for (int i = 0; i < num_triangles; i++) {
+        for (int j = i; j < num_triangles; j++) {
+            if (triangles_to_render[i].avg_depth < triangles_to_render[j].avg_depth) {
+                triangle_t temp = triangles_to_render[i];
+                triangles_to_render[i] = triangles_to_render[j];
+                triangles_to_render[j] = temp;
 
+            }
+        }
+    }
+    // triangleBubbleSort(triangles_to_render, array_length(triangles_to_render));
 }
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// Sort triangles
+///////////////////////////////////////////////////////////////////////////////////////////////
+// void swap(triangle_t* xp, triangle_t* yp) {
+//     triangle_t temp = *xp;
+//     *xp = *yp;
+//     *yp = temp;
+// }
+
+// void triangleBubbleSort(triangle_t* arr, int n) {
+//     int i, j;
+//     bool swapped;
+//     for (i = 0; i < n - 1; i++) {
+//         swapped = false;
+//         for (j = 0; j < n - i - 1; j++) {
+//             if (arr[j].avg_depth > arr[j+1].avg_depth) {
+//                 swap(&arr[j], &arr[j+1]);
+//                 swapped = true;
+//             }
+//         }
+
+//         if (swapped == false) { break; }
+//     }
+// }
+
 void render(void) {
+    SDL_RenderClear(renderer);
     draw_grid();
 
     // Loop all projected triangles and render them
