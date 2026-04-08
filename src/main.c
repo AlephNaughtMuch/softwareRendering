@@ -114,11 +114,10 @@ void update(void) {
         // Loop all three vertices of this current face and apply transformations
         for (int j = 0; j < 3; j++) {
             vec3_t transformed_vertex = face_vertices[j];
+
+            // TODO: Use a matrix to scale our original vertex
             
-            // apply rotation
-            transformed_vertex = vec3_rotate_x(transformed_vertex, mesh.rotation.x);
-            transformed_vertex = vec3_rotate_y(transformed_vertex, mesh.rotation.y);
-            transformed_vertex = vec3_rotate_z(transformed_vertex, mesh.rotation.z);
+            
 
             // Translate the vertex away from the camera
             // transformed_vertex.z -= camera_position.z;
@@ -194,34 +193,8 @@ void update(void) {
             }
         }
     }
-    // triangleBubbleSort(triangles_to_render, array_length(triangles_to_render));
 }
 
-
-///////////////////////////////////////////////////////////////////////////////////////////////
-// Sort triangles
-///////////////////////////////////////////////////////////////////////////////////////////////
-// void swap(triangle_t* xp, triangle_t* yp) {
-//     triangle_t temp = *xp;
-//     *xp = *yp;
-//     *yp = temp;
-// }
-
-// void triangleBubbleSort(triangle_t* arr, int n) {
-//     int i, j;
-//     bool swapped;
-//     for (i = 0; i < n - 1; i++) {
-//         swapped = false;
-//         for (j = 0; j < n - i - 1; j++) {
-//             if (arr[j].avg_depth > arr[j+1].avg_depth) {
-//                 swap(&arr[j], &arr[j+1]);
-//                 swapped = true;
-//             }
-//         }
-
-//         if (swapped == false) { break; }
-//     }
-// }
 
 void render(void) {
     SDL_RenderClear(renderer);
