@@ -8,6 +8,7 @@
 #include "vector.h"
 #include "mesh.h"
 #include "matrix.h"
+#include "light.h"
 
 // Define PI in case the compiler does not have a definition for it.
 #ifndef M_PI
@@ -19,7 +20,6 @@
 //////////////////////////////////////////////////////////////////////////////////////////////
 triangle_t* triangles_to_render = NULL;
 
-
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Global variables for execution status and game loop
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -30,6 +30,7 @@ vec3_t camera_position = { .x = 0, .y = 0, .z = 0 };
 mat4_t proj_matrix;
 
 char* mesh_location = "assets/cube.obj";
+
 
 void setup (void) {
     // Allocate the required memory in btyes to hold the color buffer
@@ -56,6 +57,8 @@ void setup (void) {
     // Loads the cube values in the mesh data structure
     load_cube_mesh_data();
     // load_obj_file_data(mesh_location);
+
+
 }
 
 void process_input(void) {
@@ -88,7 +91,6 @@ void process_input(void) {
     }
 
 }
-
 
 void update(void) {
 
@@ -153,24 +155,25 @@ void update(void) {
         ////////////////////////////////////////////////////////
         // Backface Culling
         ///////////////////////////////////////////////////////
+        vec3_t vector_a = vec3_from_vec4(transformed_vertices[0]);   /*   A    */
+        vec3_t vector_b = vec3_from_vec4(transformed_vertices[1]);   /*  / \  */
+        vec3_t vector_c = vec3_from_vec4(transformed_vertices[2]);   /* C--B  */
+
+        vec3_t vector_ab = vec3_sub(vector_b, vector_a);
+        vec3_t vector_ac = vec3_sub(vector_c, vector_a);
+        vec3_t normal = vec3_cross(vector_ab, vector_ac);
+
+        vec3_t camera_ray = vec3_sub(camera_position, vector_a);
+        
+        vec3_normalize(&vector_ac);
+        vec3_normalize(&vector_ab);
+        vec3_normalize(&normal);
+        vec3_normalize(&camera_ray);
+        
+        
+        float dot_normal_camera = vec3_dot(normal, camera_ray);
+        
         if (cull_method == CULL_BACKFACE) {
-            vec3_t vector_a = vec3_from_vec4(transformed_vertices[0]);   /*   A    */
-            vec3_t vector_b = vec3_from_vec4(transformed_vertices[1]);   /*  / \  */
-            vec3_t vector_c = vec3_from_vec4(transformed_vertices[2]);   /* C--B  */
-    
-            vec3_t vector_ab = vec3_sub(vector_b, vector_a);
-            vec3_t vector_ac = vec3_sub(vector_c, vector_a);
-            vec3_t normal = vec3_cross(vector_ab, vector_ac);
-            vec3_t camera_ray = vec3_sub(camera_position, vector_a);
-            
-            vec3_normalize(&vector_ac);
-            vec3_normalize(&vector_ab);
-            vec3_normalize(&normal);
-            vec3_normalize(&camera_ray);
-    
-    
-            float dot_normal_camera = vec3_dot(normal, camera_ray);
-    
             // If the face is a back-face, continue to the next face
             if (dot_normal_camera < 0) { continue; }
         }
@@ -195,13 +198,17 @@ void update(void) {
         // Calculate the avg depth of each face based on the vertices after transformation
         float avg_depth = (transformed_vertices[0].z + transformed_vertices[1].z + transformed_vertices[2].z) / 3.0;
 
+        // Calculate color and lighting
+        float light_intensity_factor = light_alignment_factor(normal, light.direction);
+        uint32_t triangle_color = light_apply_intensity(mesh_face.color, light_intensity_factor);
+
         triangle_t projected_triangle = {
             .points = {
                 { projected_points[0].x, projected_points[0].y },
                 { projected_points[1].x, projected_points[1].y },
                 { projected_points[2].x, projected_points[2].y }
             },
-            .color = mesh_face.color,
+            .color = triangle_color,
             .avg_depth = avg_depth
         };
 
@@ -222,7 +229,6 @@ void update(void) {
         }
     }
 }
-
 
 void render(void) {
     SDL_RenderClear(renderer);
