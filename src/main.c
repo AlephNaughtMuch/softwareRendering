@@ -9,6 +9,11 @@
 #include "mesh.h"
 #include "matrix.h"
 
+// Define PI in case the compiler does not have a definition for it.
+#ifndef M_PI
+#    define M_PI 3.14159265358979323846
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Declare an array of vectors/points
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -21,18 +26,32 @@ triangle_t* triangles_to_render = NULL;
 bool is_running = false;
 int previous_frame_time = 0;
 
-
 vec3_t camera_position = { .x = 0, .y = 0, .z = 0 };
+mat4_t proj_matrix;
+
 char* mesh_location = "assets/cube.obj";
-float fov_factor = 640;
 
 void setup (void) {
     // Allocate the required memory in btyes to hold the color buffer
     color_buffer = (uint32_t*) malloc(sizeof(uint32_t) * window_width * window_height);
     
     // Create a SDL texture that is used to display the color buffer
-    color_buffer_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, 
-        SDL_TEXTUREACCESS_STREAMING, window_width, window_height);
+    color_buffer_texture = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_ARGB8888,
+        SDL_TEXTUREACCESS_STREAMING,
+        window_width,
+        window_height
+    );
+    
+    // Initialize the perspective projection or NDC matrix
+    // Define perpsective parameters
+    float fov = M_PI / 3.0; // 60 degrees
+    float aspect = window_height / (float) window_width;
+    float znear = 0.1;
+    float zfar = 100;
+
+    proj_matrix = mat4_make_perspective(fov, aspect, znear, zfar);
     
     // Loads the cube values in the mesh data structure
     load_cube_mesh_data();
@@ -70,17 +89,6 @@ void process_input(void) {
 
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////
-// Function that receives a 3D vector and returns a projected 2D point.
-///////////////////////////////////////////////////////////////////////////////////////////////
-vec2_t project(vec3_t point) {
-    vec2_t projected_point = { 
-        .x = (fov_factor  * point.x) / (point.z + 0.0000001f), 
-        .y = (fov_factor * point.y) / (point.z + 0.0000001f) 
-    };
-    
-    return projected_point;
-}
 
 void update(void) {
 
@@ -100,7 +108,7 @@ void update(void) {
     mesh.rotation.y += 0.01;
     mesh.rotation.z += 0.01;
 
-    mesh.scale.x += 0.002;
+    // mesh.scale.x += 0.002;
     
     // mesh.translation.x += 0.01;
     mesh.translation.z = 5.0;
@@ -138,10 +146,6 @@ void update(void) {
 
             transformed_vertex = mat4_mul_vec4(world_matrix, transformed_vertex);
 
-            // Translate the vertex away from the camera
-            // transformed_vertex.z -= camera_position.z;
-            // transformed_vertex.z += 5;
-
             // Store the transformed vertex 
             transformed_vertices[j] = transformed_vertex;
         }
@@ -172,14 +176,19 @@ void update(void) {
         }
 
         // Projection
-        vec2_t projected_points[3];
+        vec4_t projected_points[3];
 
         for (int j = 0; j < 3; j ++) {
-            projected_points[j] = project(vec3_from_vec4(transformed_vertices[j]));
+            projected_points[j] = mat4_mul_vec4_project(proj_matrix, transformed_vertices[j]);
 
-            // Scale and translate the projected points to the middle of the screen
-            projected_points[j].x += (window_width / 2);
-            projected_points[j].y += (window_height / 2);
+            // Scale the points to the viewport
+            projected_points[j].x *= (window_width / 2.0);
+            projected_points[j].y *= (window_height / 2.0);
+            
+            // Translate the projected points to the middle of the screen
+            projected_points[j].x += (window_width / 2.0);
+            projected_points[j].y += (window_height / 2.0);
+
 
         }
         

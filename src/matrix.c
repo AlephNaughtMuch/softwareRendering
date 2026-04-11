@@ -73,6 +73,34 @@ mat4_t mat4_make_rotation_z(float angle) {
     return m;
 }
 
+mat4_t mat4_make_perspective(float fov, float aspect, float znear, float zfar) {
+    // Init an empty Matrix4x4
+    mat4_t m = {{{ 0 }}};
+    
+    // Create the Perspective Projection Matrix or NDC matrix
+    m.m[0][0] = aspect * (1 / tan(fov / 2));
+    m.m[1][1] = 1 / tan(fov / 2);
+    m.m[2][2] = zfar / (zfar - znear);
+    m.m[2][3] = (-zfar * znear) / (zfar - znear);
+    m.m[3][2] = 1.0;
+
+    return m;
+}
+
+vec4_t mat4_mul_vec4_project(mat4_t mat_proj, vec4_t v) {
+    // Transform the vertex/vector to NDC or Perspective Space
+    vec4_t result = mat4_mul_vec4(mat_proj, v);
+    
+    // If original matrix had a z-value, do the perspective divide
+    if (result.w != 0.0) {
+        result.x /= result.w;
+        result.y /= result.w;
+        result.z /= result.w;
+    }
+
+    return result;
+}
+
 mat4_t mat4_mul_mat4(mat4_t a, mat4_t b) {
     mat4_t m;
     for (int i = 0; i < 4; i++) {
