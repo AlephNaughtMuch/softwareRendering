@@ -29,7 +29,7 @@ int previous_frame_time = 0;
 vec3_t camera_position = { .x = 0, .y = 0, .z = 0 };
 mat4_t proj_matrix;
 
-char* mesh_location = "assets/cube.obj";
+char* mesh_location = "assets/f22.obj";
 
 
 void setup (void) {
@@ -55,8 +55,8 @@ void setup (void) {
     proj_matrix = mat4_make_perspective(fov, aspect, znear, zfar);
     
     // Loads the cube values in the mesh data structure
-    load_cube_mesh_data();
-    // load_obj_file_data(mesh_location);
+    // load_cube_mesh_data();
+    load_obj_file_data(mesh_location);
 
 
 }
@@ -107,8 +107,8 @@ void update(void) {
     previous_frame_time = SDL_GetTicks();
 
     mesh.rotation.x += 0.01;
-    mesh.rotation.y += 0.01;
-    mesh.rotation.z += 0.01;
+    // mesh.rotation.y += 0.01;
+    // mesh.rotation.z += 0.01;
 
     // mesh.scale.x += 0.002;
     
