@@ -141,6 +141,10 @@ void draw_textured_triangle (
     vec4_t point_b = {x1, y1, z1, w1};
     vec4_t point_c = {x2, y2, z2, w2};
 
+    tex2_t a_uv = {u0, v0};
+    tex2_t b_uv = {u1, v1};
+    tex2_t c_uv = {u2, v2};
+
     //////////////////////////////////////////////////////////
     // Render the upper part of the triangle (flat-bottom) ///
     //////////////////////////////////////////////////////////
@@ -160,8 +164,7 @@ void draw_textured_triangle (
             if (x_end < x_start) { int_swap(&x_start, &x_end); }
     
             for (int x = x_start; x < x_end; x++) {
-                // draw_pixel(x, y, (x % 2 == 0 && y % 2 == 0 ? 0xFFFF00FF : 0xFF000000));
-                draw_texel(x, y, texture, point_a, point_b, point_c, u0, v0, u1, v1, u2, v2);
+                draw_texel(x, y, texture, point_a, point_b, point_c, a_uv, b_uv, c_uv);
             }
     
         }
@@ -183,8 +186,7 @@ void draw_textured_triangle (
             if (x_end < x_start) { int_swap(&x_start, &x_end); }
     
             for (int x = x_start; x < x_end; x++) {
-                // draw_pixel(x, y, (x % 2 == 0 && y % 2 == 0 ? 0xFFFF00FF : 0xFF000000));
-                draw_texel(x, y, texture, point_a, point_b, point_c, u0, v0, u1, v1, u2, v2);
+                draw_texel(x, y, texture, point_a, point_b, point_c, a_uv, b_uv, c_uv);
             }
     
         }
@@ -227,9 +229,9 @@ void draw_texel(
     vec4_t point_a, 
     vec4_t point_b, 
     vec4_t point_c,
-    float u0, float v0, 
-    float u1, float v1, 
-    float u2, float v2
+    tex2_t a_uv,
+    tex2_t b_uv,
+    tex2_t c_uv
 ) {
     
     // Get weights for P
@@ -245,9 +247,21 @@ void draw_texel(
     float beta = weights.y;
     float gamma = weights.z;
 
-    // Calculated the interpolated UVs for the point P
-    float interpolated_u = u0 * alpha + u1 * beta + u2 * gamma;
-    float interpolated_v = v0 * alpha + v1 * beta + v2 * gamma;
+    // Calculated the interpolated UVs and 1/w for the current pixel
+    float interpolated_u;
+    float interpolated_v;
+    float interpolated_reciprocal_w;
+
+    // Find the reciprocal of the interpolated depth for the current pixel
+    interpolated_reciprocal_w = (1 / point_a.w) * alpha + (1 / point_b.w) * beta + (1 / point_c.w) * gamma;
+    
+    // Find the UVs with the depth divide and barycentric weights for the current pixel 
+    interpolated_u = (a_uv.u / point_a.w) * alpha + (b_uv.u / point_b.w) * beta + (c_uv.u / point_c.w) * gamma;
+    interpolated_v = (a_uv.v / point_a.w) * alpha + (b_uv.v / point_b.w) * beta + (c_uv.v / point_c.w) * gamma;
+    
+    // Undo the perspective divide for the interpolated UVs by dividing by the interpolated depth
+    interpolated_u /= interpolated_reciprocal_w;
+    interpolated_v /= interpolated_reciprocal_w;
 
     // Grab the texture cooridnates according to the texture's resolution
     int tex_x = abs((int) (interpolated_u * texture_width));
