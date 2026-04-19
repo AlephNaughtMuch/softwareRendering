@@ -2,6 +2,10 @@
 #include "display.h"
 #include "swap.h"
 
+#define EPSILON 0.001
+#define MIN(i, j) (((i) < (j)) ? (i) : (j))
+#define MAX(i, j) (((i) > (j)) ? (i) : (j))
+
 void fill_flat_bottom_triangle (
     int x0, int y0, 
     int x1, int y1, 
@@ -207,7 +211,6 @@ vec3_t barycenteric_weights(vec2_t a, vec2_t b, vec2_t c, vec2_t p) {
     
     // Area of the full parallelogram || AC X AB||
     float area_parallelogram_abc = (ac.x * ab.y - ac.y * ab.x); 
-
     // Calculate alpha, beta and gamma (areal coordinates for the point P)
     float alpha = (pc.x * pb.y - pc.y * pb.x) / area_parallelogram_abc;
     float beta = (ac.x * ap.y - ac.y * ap.x) / area_parallelogram_abc;
@@ -252,20 +255,26 @@ void draw_texel(
     float interpolated_v;
     float interpolated_reciprocal_w;
 
+
     // Find the reciprocal of the interpolated depth for the current pixel
     interpolated_reciprocal_w = (1 / point_a.w) * alpha + (1 / point_b.w) * beta + (1 / point_c.w) * gamma;
-    
+
     // Find the UVs with the depth divide and barycentric weights for the current pixel 
     interpolated_u = (a_uv.u / point_a.w) * alpha + (b_uv.u / point_b.w) * beta + (c_uv.u / point_c.w) * gamma;
     interpolated_v = (a_uv.v / point_a.w) * alpha + (b_uv.v / point_b.w) * beta + (c_uv.v / point_c.w) * gamma;
     
     // Undo the perspective divide for the interpolated UVs by dividing by the interpolated depth
+    if (fabsf(interpolated_reciprocal_w) < 1e-6f) return; // skip degenerate pixel
     interpolated_u /= interpolated_reciprocal_w;
     interpolated_v /= interpolated_reciprocal_w;
 
     // Grab the texture cooridnates according to the texture's resolution
-    int tex_x = abs((int) (interpolated_u * texture_width));
-    int tex_y = abs((int) (interpolated_v * texture_height));
+    int tex_x = (int)(interpolated_u * texture_width);
+    int tex_y = (int)(interpolated_v * texture_height);
+
+    tex_x = (tex_x % texture_width  + texture_width)  % texture_width;
+    tex_y = (tex_y % texture_height + texture_height) % texture_height;
+
 
     // Grab the texture and draw a pixel with the texture's information
     // by linearly accessing the texture array
