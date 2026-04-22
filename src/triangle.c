@@ -138,6 +138,13 @@ void draw_textured_triangle (
         float_swap(&u0, &u1);
         float_swap(&v0, &v1);
     }
+
+    // Flip the V component of the texture to account for 
+    // inverted UV coordinate system
+    v0 = 1.0 - v0;
+    v1 = 1.0 - v1;
+    v2 = 1.0 - v2;
+
     //////////////////////////////////////////////////////////
     // Create vectors a, b, c ////////////////////////////////
     //////////////////////////////////////////////////////////
