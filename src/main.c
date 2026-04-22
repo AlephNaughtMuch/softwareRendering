@@ -10,28 +10,34 @@
 #include "matrix.h"
 #include "light.h"
 
+// Load the png decoding library
+#include "upng.h"
+
 // Define PI in case the compiler does not have a definition for it.
 #ifndef M_PI
 #    define M_PI 3.14159265358979323846
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
-// Declare an array of vectors/points
+// Declare an array of vectors/points /////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////
 triangle_t* triangles_to_render = NULL;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
-// Global variables for execution status and game loop
-//////////////////////////////////////////////////////////////////////////////////////////////
+// Global variables for execution status and game loop ////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
 bool is_running = false;
 int previous_frame_time = 0;
 
 vec3_t camera_position = { .x = 0, .y = 0, .z = 0 };
 mat4_t proj_matrix;
 
-char* mesh_location = "assets/f22.obj";
+char* mesh_location = "assets/cube.obj";
+char* texture_location = "assets/cube.png";
 
-
+///////////////////////////////////////////////////////////////////////////////////////////////
+// Define the renderer's setup, input, update, render and garbage clearing ////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
 void setup (void) {
     // Allocate the required memory in btyes to hold the color buffer
     color_buffer = (uint32_t*) malloc(sizeof(uint32_t) * window_width * window_height);
@@ -39,7 +45,7 @@ void setup (void) {
     // Create a SDL texture that is used to display the color buffer
     color_buffer_texture = SDL_CreateTexture(
         renderer,
-        SDL_PIXELFORMAT_ARGB8888,
+        SDL_PIXELFORMAT_RGBA32,
         SDL_TEXTUREACCESS_STREAMING,
         window_width,
         window_height
@@ -55,13 +61,16 @@ void setup (void) {
     proj_matrix = mat4_make_perspective(fov, aspect, znear, zfar);
     
     // Manually load the hardcoded texture data from the static array
-    mesh_texture = (uint32_t*) REDBRICK_TEXTURE;
-    texture_width = 64;
-    texture_height = 64;
+    // mesh_texture = (uint32_t*) REDBRICK_TEXTURE;
+    // texture_width = 64;
+    // texture_height = 64;
 
     // Loads the cube values in the mesh data structure
     load_cube_mesh_data();
     // load_obj_file_data(mesh_location);
+
+    // Loads the texture information from an external PNG file
+    load_png_texture_data(texture_location);
 
 
 }
@@ -115,7 +124,7 @@ void update(void) {
 
     previous_frame_time = SDL_GetTicks();
 
-    mesh.rotation.x += 0.01;
+    // mesh.rotation.x += 0.01;
     mesh.rotation.y += 0.01;
     // mesh.rotation.z += 0.01;
 
@@ -162,7 +171,7 @@ void update(void) {
         }
         
         ////////////////////////////////////////////////////////
-        // Backface Culling
+        // Backface Culling ///////////////////////////////////
         ///////////////////////////////////////////////////////
         vec3_t vector_a = vec3_from_vec4(transformed_vertices[0]);   /*   A    */
         vec3_t vector_b = vec3_from_vec4(transformed_vertices[1]);   /*  / \  */
@@ -267,9 +276,27 @@ void render(void) {
 
         if (render_method == RENDER_TEXTURED || render_method == RENDER_TEXTURED_WIRE) {
             draw_textured_triangle(
-                triangle.points[0].x, triangle.points[0].y, triangle.points[0].z, triangle.points[0].w, triangle.texcoords[0].u, triangle.texcoords[0].v,
-                triangle.points[1].x, triangle.points[1].y, triangle.points[1].z, triangle.points[1].w, triangle.texcoords[1].u, triangle.texcoords[1].v,
-                triangle.points[2].x, triangle.points[2].y, triangle.points[2].z, triangle.points[2].w, triangle.texcoords[2].u, triangle.texcoords[2].v,
+                triangle.points[0].x, 
+                triangle.points[0].y, 
+                triangle.points[0].z, 
+                triangle.points[0].w, 
+                triangle.texcoords[0].u, 
+                triangle.texcoords[0].v,
+
+                triangle.points[1].x, 
+                triangle.points[1].y, 
+                triangle.points[1].z, 
+                triangle.points[1].w, 
+                triangle.texcoords[1].u, 
+                triangle.texcoords[1].v,
+                
+                triangle.points[2].x, 
+                triangle.points[2].y, 
+                triangle.points[2].z, 
+                triangle.points[2].w, 
+                triangle.texcoords[2].u, 
+                triangle.texcoords[2].v,
+                
                 mesh_texture
             );
         }
