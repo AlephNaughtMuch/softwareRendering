@@ -1,236 +1,194 @@
-# Software Renderer
+# Software Renderer (SDL + C)
 
-> A CPU-based software rendering engine written in C, using SDL2 exclusively for windowing and display output.
+A **CPU-based software renderer written in C**, using **SDL2 only for windowing and display output**.  
+The project focuses on building a complete rasterization pipeline from the ground up — covering projection math, triangle rasterization, depth buffering, lighting, texture mapping, and performance optimization — before moving to GPU rendering.
 
-This project is a ground-up exploration of fundamental graphics programming — building a rendering pipeline entirely on the CPU before touching GPU APIs. The goal is to deeply understand the math and mechanics that GPU pipelines abstract away.
-
----
-
-## Table of Contents
-
-- [Features](#features)
-- [Requirements](#requirements)
-- [Building](#building)
-- [Running](#running)
-- [Controls](#controls)
-- [Project Structure](#project-structure)
-- [Concepts Covered](#concepts-covered)
-- [Known Limitations](#known-limitations)
-- [Roadmap](#roadmap)
-- [Changelog](#changelog)
-- [Motivation](#motivation)
-- [Learning Resources](#learning-resources)
+This is part of an ongoing exploration into **rendering engineering / graphics programming**, coming from a VFX/film technical background.
 
 ---
 
-## Features
+## ✨ Current Features
 
-- SDL2 window and renderer initialization
+### Core Pipeline
+- SDL2 window + renderer initialization (RGBA32 pixel format)
 - CPU color buffer rendering pipeline
-- Perspective projection of 3D points to 2D screen space
-- Per-axis vector rotation (X, Y, Z)
-- Mesh data type with dynamic array support for complex geometry
-- OBJ file loading — read mesh data directly from disk
-- Wireframe rendering via line drawing from screen-space points
-- Filled triangle rasterization
-- Per-face and per-triangle color properties
-- Backface culling with interactive toggle
-- Painter's algorithm — sorts faces by average depth for correct draw order
-- Interactive switching between culling modes and render modes at runtime
-- 60 FPS frame timing
-- Grid overlay rendering
-- Event-driven input handling
+- Framebuffer clearing and presentation
+- Locked 60 FPS frame timing with event-driven input handling
+
+### Geometry & Mesh
+- Mesh and triangle data types with dynamic arrays for complex geometry
+- OBJ file loader — reads arbitrary meshes from disk
+- Hardcoded cube mesh as default fallback
+- Per-face and per-triangle color support
+
+### Transformations
+- Full matrix-based transformation pipeline
+- Scale, rotation (per-axis), and translation matrices
+- World matrix combining all transforms (matrix-to-matrix multiplication)
+- NDC / projection matrix
+- Object → world → screen space pipeline with correct Y-axis orientation
+
+### Rendering Modes (interactive toggle)
+- Wireframe rendering
+- Filled flat-shaded triangles
+- Wireframe + filled combined
+- Textured rendering
+
+### Rasterization
+- Line drawing (screen-space)
+- Triangle wireframe rendering
+- Filled triangle rasterization (flat-top / flat-bottom split)
+- Slope-based scanline fill with divide-by-zero safeguards
+
+### Backface Culling
+- Vector math (cross product, dot product, normals)
+- Backface culling with interactive toggle between culling modes
+
+### Depth Sorting
+- Painter's algorithm — triangles sorted by average Z depth before rendering
+
+### Lighting
+- Directional light source (flat shading model)
+- Per-face light intensity based on surface normal alignment
+
+### Texture Mapping
+- PNG texture loading via the `upng` library (minimal, dependency-free)
+- UV coordinate interpolation using barycentric weights
+- Perspective-correct UV mapping (perspective divide)
+- Safeguards for degenerate pixels during perspective divide
+- Correct UV orientation for hardcoded cube geometry
 
 ---
 
-## Requirements
+## 🧠 Concepts Covered
 
-- C compiler — GCC or Clang recommended
-- [SDL2](https://www.libsdl.org/) development libraries
-- Math library (`-lm`, included in Makefile)
+### Software Rendering Pipeline
+- Manual color buffer allocation and management
+- CPU raster operations and framebuffer presentation
+- CPU → GPU texture upload via SDL
 
-**Install SDL2 on common platforms:**
+### 3D Math
+- Perspective projection: `x' = (fov * x) / z`, `y' = (fov * y) / z`
+- Camera offset handling to avoid division by zero
+- Screen-space coordinate transforms
+- Matrix math: scale, rotation, translation, world, projection
+- Vector math: cross products, dot products, surface normals
+- Barycentric coordinate interpolation for UV mapping
+- Perspective divide for correct texture projection
 
+### Image Processing
+- PNG decoding and pixel format handling (RGBA32)
+- UV space to texel space mapping
+- Perspective-correct interpolation across triangle surfaces
+
+### Performance
+- Tight raster loops to minimise unnecessary iteration
+- Memory bandwidth considerations
+- Frame timing and event loop responsiveness
+
+---
+
+## ⚙️ Build Requirements
+
+- C compiler (GCC / Clang recommended)
+- SDL2 development libraries
+
+### Linux / macOS:
 ```bash
-# Ubuntu / Debian
-sudo apt install libsdl2-dev
-
-# macOS (Homebrew)
-brew install sdl2
-
-# Arch Linux
-sudo pacman -S sdl2
+gcc src/main.c src/display.c src/vector.c -lSDL2 -lm -o renderer
 ```
-
----
-
-## Building
-
-A `Makefile` is included. From the repo root:
-
+Or simply:
 ```bash
 make
 ```
 
-To build manually:
-
-```bash
-gcc src/main.c src/display.c src/vector.c -lSDL2 -lm -o renderer
-```
-
 ---
 
-## Running
+## 🚀 Running
 
 ```bash
 ./renderer
 ```
 
----
-
-## Controls
+### Controls
 
 | Key | Action |
 |-----|--------|
-| `ESC` | Quit the application |
-| *(runtime keys)* | Toggle culling mode |
-| *(runtime keys)* | Toggle render mode (wireframe / filled / both) |
-
-Window resizing is supported.
+| `1` | Wireframe only |
+| `2` | Filled triangles |
+| `3` | Wireframe + filled |
+| `4` | Textured |
+| `C` | Toggle backface culling |
+| `ESC` | Exit |
 
 ---
 
-## Project Structure
+## 📂 Project Structure
 
 ```
-softwareRendering/
+.
 ├── src/
-│   ├── main.c          # Entry point, game loop, input handling
-│   ├── display.c       # Color buffer, SDL texture, draw functions
-│   ├── display.h
-│   ├── vector.c        # 3D vector math, rotation, cross/dot product
-│   └── vector.h
+│   ├── main.c
+│   ├── display.c / display.h
+│   ├── vector.c / vector.h
+│   ├── mesh.c / mesh.h
+│   ├── triangle.c / triangle.h
+│   ├── texture.c / texture.h
+│   ├── light.c / light.h
+│   ├── matrix.c / matrix.h
+│   └── upng.c / upng.h       # Minimal PNG decoding library
 ├── Makefile
 └── README.md
 ```
 
 ---
 
-## Concepts Covered
+## 🛠 Known Limitations
 
-### Software Rendering Pipeline
+- No Z-buffer depth testing (using painter's algorithm for depth sorting)
+- No clipping against the view frustum
+- No mesh instancing
+- CPU only — no GPU acceleration
 
-- Manual color buffer allocation and management
-- CPU rasterization — pixels, rects, lines, filled triangles
-- Framebuffer clearing and presentation via SDL texture upload
-- 60 FPS frame pacing
+These are intentional at this stage. The goal is to understand every part of the pipeline before moving to a GPU-based implementation.
 
-### 3D Math
+---
 
-Perspective projection formula applied per point:
+## 🎯 Planned Next Steps
 
-```
-x' = (fov * x) / z
-y' = (fov * y) / z
-```
-
-- Per-axis rotation (X, Y, Z) using rotation matrices
-- Vector cross product and dot product for surface normal calculation
-- Division-by-zero guard when calculating slopes and projections
-- Screen-space coordinate transforms
-
-### Geometry & Mesh
-
-- `mesh` struct with dynamic array backing for vertices and faces
-- `triangle` and `face` structs with per-element color properties
-- OBJ file parser — loads vertex and face data from disk
-
-### Visibility & Sorting
-
-- Backface culling using surface normals and camera dot product
-- Painter's algorithm — triangles sorted by average Z depth before drawing
+### Rendering Features
+- Z-buffer / depth buffer implementation (replacing painter's algorithm)
+- View frustum clipping
+- Camera system with movement controls
+- Gouraud / Phong shading models
 
 ### Performance
+- Dirty rectangle updates
+- SIMD optimisations
+- Improved frame timing control
 
-- Tight raster loop design
-- Avoiding unnecessary full-screen iteration
-- Memory bandwidth considerations
-- Event loop responsiveness in SDL
-
----
-
-## Known Limitations
-
-This project is intentionally built incrementally:
-
-- No depth buffer (z-buffering) — painter's algorithm used instead
-- No shading or lighting model yet
-- No clipping or frustum culling
-- CPU-only (no GPU pipeline integration)
-- Minimal OBJ support (vertices and faces only)
+### Graphics Programming Progression
+- Software renderer → OpenGL pipeline transition
+- Shader experimentation (GLSL)
+- Physically-based shading concepts
 
 ---
 
-## Roadmap
+## 💼 Why This Project Exists
 
-### Rendering
-
-- [ ] Depth buffer (z-buffer) to replace painter's algorithm
-- [ ] Camera transform system
-- [ ] Basic lighting model (flat, Gouraud, Phong)
-- [ ] Texture mapping
-
-### Performance
-
-- [ ] Dirty rectangle updates
-- [ ] SIMD optimizations (longer term)
-
-### Graphics Progression
-
-- [ ] Transition to OpenGL / Vulkan
-- [ ] Shader experimentation
-- [ ] Physically-based shading concepts
-
----
-
-## Changelog
-
-| Date | Milestone |
-|------|-----------|
-| 2026-03-23 | Painter's algorithm — sort faces by average depth for correct draw order |
-| 2026-03-22 | Per-face and per-triangle color properties |
-| 2026-03-22 | Interactive runtime toggle for culling modes and render modes |
-| 2026-03-22 | Division-by-zero guard when calculating rasterization slopes |
-| 2026-03-22 | Filled triangle rasterization |
-| 2026-03-07 | Vector math operations (cross, dot, normalize); backface culling |
-| 2026-03-01 | OBJ file loader — read mesh geometry from disk |
-| 2026-02-27 | Groundwork for OBJ/mesh data loading |
-| 2026-02-26 | Mesh struct; dynamic array for complex geometry |
-| 2026-02-26 | Wireframe cube at 60 FPS, higher resolution, orthographic mode |
-| 2026-02-26 | `draw_triangle` function; mesh and triangle data types; line rendering |
-| 2026-02-23 | Math library integration; per-axis rotation for projected cube |
-| 2026-02-22 | Vector typedefs; faster rect drawing; basic 3D→2D cube projection |
-| 2026-02-22 | Color buffer, SDL texture pipeline, grid overlay, draw pixel/rect functions |
-| 2026-02-22 | Display module split into `display.c` / `display.h` |
-| 2026-02-22 | Initial SDL2 window, ESC quit, first render loop |
-| 2026-02-22 | Initial commit — project scaffolding, `src/` folder, Makefile |
-
----
-
-## Motivation
-
-This project comes from a VFX/film background in lighting and compositing, with the goal of building stronger low-level graphics foundations to move toward:
+Coming from a **VFX/film lighting & compositing technical background**, this project builds low-level graphics foundations toward a transition into:
 
 - Rendering engineering
-- Technical art (games)
 - GPU graphics programming
+- Real-time NPR / stylized rendering pipelines
 
-Understanding the CPU renderer helps demystify the math behind GPU pipelines and shader programming.
+Understanding the CPU renderer demystifies GPU pipelines and shader math from first principles.
 
 ---
 
-## Learning Resources
+## 📚 Learning Sources
 
-- [Pikuma — 3D Computer Graphics Programming](https://pikuma.com/courses/raycasting-engine-tutorial-algorithm-javascript)
+- Pikuma graphics programming courses
 - Classic software renderer tutorials
-- *Real-Time Rendering* (Akenine-Möller et al.)
+- Real-time rendering literature
+- [upng](https://github.com/elanthis/upng/) — minimal PNG decoding library by elanthis
