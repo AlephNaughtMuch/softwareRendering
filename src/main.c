@@ -32,15 +32,19 @@ int previous_frame_time = 0;
 vec3_t camera_position = { .x = 0, .y = 0, .z = 0 };
 mat4_t proj_matrix;
 
-char* mesh_location = "assets/cube.obj";
-char* texture_location = "assets/cube.png";
+char* mesh_location = "assets/f117.obj";
+char* texture_location = "assets/f117.png";
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Define the renderer's setup, input, update, render and garbage clearing ////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////
 void setup (void) {
-    // Allocate the required memory in btyes to hold the color buffer
+    // Allocate the required memory in bytes to hold the color buffer
     color_buffer = (uint32_t*) malloc(sizeof(uint32_t) * window_width * window_height);
+
+    // Allocate the required memory in bytes to hold the depth buffer
+    z_buffer = (float*) malloc(sizeof(float) * window_width * window_height);
+
     
     // Create a SDL texture that is used to display the color buffer
     color_buffer_texture = SDL_CreateTexture(
@@ -124,8 +128,8 @@ void update(void) {
 
     previous_frame_time = SDL_GetTicks();
 
-    // mesh.rotation.x += 0.01;
-    mesh.rotation.y += 0.01;
+    mesh.rotation.x += 0.01;
+    // mesh.rotation.y += 0.01;
     // mesh.rotation.z += 0.01;
 
     // mesh.scale.x += 0.002;
@@ -216,9 +220,6 @@ void update(void) {
 
         }
         
-        // Calculate the avg depth of each face based on the vertices after transformation
-        float avg_depth = (transformed_vertices[0].z + transformed_vertices[1].z + transformed_vertices[2].z) / 3.0;
-
         // Calculate color and lighting
         float light_intensity_factor = light_alignment_factor(normal, light.direction);
         uint32_t triangle_color = light_apply_intensity(mesh_face.color, light_intensity_factor);
@@ -235,25 +236,12 @@ void update(void) {
                 { mesh_face.c_uv.u, mesh_face.c_uv.v },
             },
             .color = triangle_color,
-            .avg_depth = avg_depth
         };
 
         // Save the projected triangles in the array of triangles
         array_push(triangles_to_render, projected_triangle);
     }
     
-    // Sort the triangles to render by their avg depth
-    int num_triangles = array_length(triangles_to_render);
-    for (int i = 0; i < num_triangles; i++) {
-        for (int j = i; j < num_triangles; j++) {
-            if (triangles_to_render[i].avg_depth < triangles_to_render[j].avg_depth) {
-                triangle_t temp = triangles_to_render[i];
-                triangles_to_render[i] = triangles_to_render[j];
-                triangles_to_render[j] = temp;
-
-            }
-        }
-    }
 }
 
 void render(void) {
@@ -267,9 +255,21 @@ void render(void) {
 
         if (render_method == RENDER_FILL_TRIANGLE || render_method == RENDER_FILL_TRIANGLE_WIRE) {
             draw_filled_triangle(
-                triangle.points[0].x, triangle.points[0].y,  // Vertex A
-                triangle.points[1].x, triangle.points[1].y,  // Vertex B
-                triangle.points[2].x, triangle.points[2].y,  // Vertex C
+                triangle.points[0].x, 
+                triangle.points[0].y, 
+                triangle.points[0].z, 
+                triangle.points[0].w, 
+
+                triangle.points[1].x, 
+                triangle.points[1].y, 
+                triangle.points[1].z, 
+                triangle.points[1].w, 
+
+                triangle.points[2].x, 
+                triangle.points[2].y, 
+                triangle.points[2].z, 
+                triangle.points[2].w, 
+
                 triangle.color
             );
         }
@@ -325,10 +325,10 @@ void render(void) {
         }
     }
 
-    // draw_filled_triangle(300, 100, 50, 400, 500, 700, 0xFF00FFFF);
     array_free(triangles_to_render);
     render_color_buffer();
     clear_color_buffer(0xFF000000);
+    clear_z_buffer();
     SDL_RenderPresent(renderer);
     
 }
@@ -336,6 +336,7 @@ void render(void) {
 void free_resources(void) {
     // Clear the array of triangles to render every frame loop
     free(color_buffer);
+    free(z_buffer);
     upng_free(png_texture);
     array_free(mesh.faces);
     array_free(mesh.vertices);

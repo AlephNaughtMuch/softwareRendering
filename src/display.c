@@ -1,5 +1,6 @@
 #include "display.h"
-
+#include "vector.h"
+#include "texture.h"
 
 // Init SDL Window and Renderer
 SDL_Window* window = NULL;
@@ -10,6 +11,9 @@ SDL_Texture* color_buffer_texture = NULL;
 
 // Init a color buffer
 uint32_t* color_buffer = NULL;
+
+// Init a depth buffer
+float* z_buffer = NULL;
 
 // Init window resolution
 int window_size_factor = 2;
@@ -36,7 +40,7 @@ bool initialize_window(void) {
     window_height = (int) (display_mode.h / window_size_factor);
 
 
-    // Create a SDL Window
+    // Create a SDL Window 
     window = SDL_CreateWindow("SoftwareRenderer", SDL_WINDOWPOS_CENTERED, 
         SDL_WINDOWPOS_CENTERED, window_width, window_height, SDL_WINDOW_RESIZABLE);
     if (!window) {
@@ -60,6 +64,21 @@ void draw_pixel(int x, int y, uint32_t color) {
         color_buffer[(window_width * y) + x] = color;
     }
 }
+// void draw_pixel(
+//     int x, 
+//     int y, 
+//     uint32_t color,
+//     vec4_t point_a, 
+//     vec4_t point_b, 
+//     vec4_t point_c,
+//     tex2_t a_uv,
+//     tex2_t b_uv,
+//     tex2_t c_uv
+// ) {
+//     if (x >= 0 && x < window_width &&  y >= 0 && y < window_height) {
+//         color_buffer[(window_width * y) + x] = color;
+//     }
+// }
 
 void draw_grid(void) {
     for (int y = 0; y < window_height; y += 10) {
@@ -126,6 +145,14 @@ void clear_color_buffer(uint32_t color) {
     for (int y = 0; y < window_height; y++) {
         for (int x = 0; x < window_width; x++) {
             color_buffer[(window_width * y) + x] = color;
+        }
+    }
+}
+
+void clear_z_buffer() {
+    for (int y = 0; y < window_height; y++) {
+        for (int x = 0; x < window_width; x++) {
+            z_buffer[(window_width * y) + x] = 1.0;
         }
     }
 }
