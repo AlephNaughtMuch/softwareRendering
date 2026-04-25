@@ -44,8 +44,10 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 - Vector math (cross product, dot product, normals)
 - Backface culling with interactive toggle between culling modes
 
-### Depth Sorting
-- Painter's algorithm — triangles sorted by average Z depth before rendering
+### Depth Buffering
+- Per-pixel Z-buffer implementation for correct depth testing (replaces painter's algorithm)
+- Z-buffer applied to both textured and non-textured rendering paths
+- Static maximum triangle buffer (no dynamic allocation per frame)
 
 ### Lighting
 - Directional light source (flat shading model)
@@ -53,10 +55,11 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 
 ### Texture Mapping
 - PNG texture loading via the `upng` library (minimal, dependency-free)
+- UV coordinates loaded directly from OBJ files
+- V coordinate inversion to account for OBJ top-left UV origin
 - UV coordinate interpolation using barycentric weights
 - Perspective-correct UV mapping (perspective divide)
 - Safeguards for degenerate pixels during perspective divide
-- Correct UV orientation for hardcoded cube geometry
 
 ---
 
@@ -145,7 +148,6 @@ make
 
 ## 🛠 Known Limitations
 
-- No Z-buffer depth testing (using painter's algorithm for depth sorting)
 - No clipping against the view frustum
 - No mesh instancing
 - CPU only — no GPU acceleration
@@ -157,7 +159,6 @@ These are intentional at this stage. The goal is to understand every part of the
 ## 🎯 Planned Next Steps
 
 ### Rendering Features
-- Z-buffer / depth buffer implementation (replacing painter's algorithm)
 - View frustum clipping
 - Camera system with movement controls
 - Gouraud / Phong shading models
