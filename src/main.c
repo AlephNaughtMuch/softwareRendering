@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <SDL2/SDL.h>
@@ -9,6 +8,7 @@
 #include "mesh.h"
 #include "matrix.h"
 #include "light.h"
+#include "camera.h"
 
 // Load the png decoding library
 #include "upng.h"
@@ -33,11 +33,12 @@ int num_triangles_to_render = 0;
 bool is_running = false;
 int previous_frame_time = 0;
 
-vec3_t camera_position = { .x = 0, .y = 0, .z = 0 };
+mat4_t world_matrix;
+mat4_t view_matrix;
 mat4_t proj_matrix;
 
-char* mesh_location = "assets/crab.obj";
-char* texture_location = "assets/crab.png";
+char* mesh_location = "assets/f117.obj";
+char* texture_location = "assets/f117.png";
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Define the renderer's setup, input, update, render and garbage clearing ////////////////////
@@ -68,13 +69,7 @@ void setup (void) {
 
     proj_matrix = mat4_make_perspective(fov, aspect, znear, zfar);
     
-    // Manually load the hardcoded texture data from the static array
-    // mesh_texture = (uint32_t*) REDBRICK_TEXTURE;
-    // texture_width = 64;
-    // texture_height = 64;
-
     // Loads the cube values in the mesh data structure
-    // load_cube_mesh_data();
     load_obj_file_data(mesh_location);
 
     // Loads the texture information from an external PNG file
@@ -98,7 +93,7 @@ void process_input(void) {
                 if (event.key.keysym.sym == SDLK_1)
                     render_method = RENDER_WIRE_VERTEX;
                 if (event.key.keysym.sym == SDLK_2)
-                    render_method = RENDER_WIRE;
+                     render_method = RENDER_WIRE;
                 if (event.key.keysym.sym == SDLK_3)
                     render_method = RENDER_FILL_TRIANGLE;
                 if (event.key.keysym.sym == SDLK_4)
@@ -133,13 +128,22 @@ void update(void) {
     previous_frame_time = SDL_GetTicks();
 
     // mesh.rotation.x += 0.01;
-    mesh.rotation.y += 0.01;
+    // mesh.rotation.y += 0.01;
     // mesh.rotation.z += 0.01;
 
     // mesh.scale.x += 0.002;
     
     // mesh.translation.x += 0.01;
-    mesh.translation.z = 7.0;
+    mesh.translation.z = 4.0;
+
+    // Change the camera position per animation frame
+    camera.position.x += 0.008;
+    camera.position.y += 0.008;
+
+    // Create the view matrix looking at a hardcoded target
+    vec3_t target = { 0, 0, 4.0 };
+    vec3_t up_direction = { 0, 1, 0 };
+    view_matrix = mat4_look_at(camera.position, target, up_direction);
 
     // Create a scale, rotation and translation matrices that will be used to multiply mesh vertices
     mat4_t scale_matrix = mat4_make_scale(mesh.scale.x, mesh.scale.y, mesh.scale.z);
@@ -164,8 +168,7 @@ void update(void) {
         for (int j = 0; j < 3; j++) {
             vec4_t transformed_vertex = vec4_from_vec3(face_vertices[j]);
 
-
-            mat4_t world_matrix = mat4_identity();
+            world_matrix = mat4_identity();
             world_matrix = mat4_mul_mat4(scale_matrix, world_matrix);
             world_matrix = mat4_mul_mat4(rotation_matrix_x, world_matrix);
             world_matrix = mat4_mul_mat4(rotation_matrix_y, world_matrix);
@@ -173,6 +176,10 @@ void update(void) {
             world_matrix = mat4_mul_mat4(translation_matrix, world_matrix);
 
             transformed_vertex = mat4_mul_vec4(world_matrix, transformed_vertex);
+
+            // Multiply the view matrix by the vector to transform the scene
+            // to camera space.
+            transformed_vertex = mat4_mul_vec4(view_matrix, transformed_vertex);
 
             // Store the transformed vertex 
             transformed_vertices[j] = transformed_vertex;
@@ -189,7 +196,8 @@ void update(void) {
         vec3_t vector_ac = vec3_sub(vector_c, vector_a);
         vec3_t normal = vec3_cross(vector_ab, vector_ac);
 
-        vec3_t camera_ray = vec3_sub(camera_position, vector_a);
+        vec3_t origin = { 0, 0, 0 };
+        vec3_t camera_ray = vec3_sub(origin, vector_a);
         
         vec3_normalize(&vector_ac);
         vec3_normalize(&vector_ab);
