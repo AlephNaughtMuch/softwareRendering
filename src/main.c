@@ -1,3 +1,4 @@
+#include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_timer.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -83,11 +84,10 @@ void process_input(void) {
     SDL_Event event;
     
     while(SDL_PollEvent(&event)) {
-
         switch (event.type) {
             case SDL_QUIT:
                 is_running = false;
-            break;
+                break;
             case SDL_KEYDOWN:
                 if (event.key.keysym.sym == SDLK_ESCAPE)
                     is_running = false;
@@ -105,8 +105,26 @@ void process_input(void) {
                     render_method = RENDER_TEXTURED_WIRE;
                 if (event.key.keysym.sym == SDLK_c)
                     cull_method = CULL_BACKFACE;
-                if (event.key.keysym.sym == SDLK_d)
+                if (event.key.keysym.sym == SDLK_x)
                     cull_method = CULL_NONE;
+
+                // FPS Camera movements
+                if (event.key.keysym.sym == SDLK_UP)
+                    camera.position.y += 3.0 * delta_time;
+                if (event.key.keysym.sym == SDLK_DOWN)
+                    camera.position.y -= 3.0 * delta_time;
+                if (event.key.keysym.sym == SDLK_a)
+                    camera.yaw += 1.0 * delta_time;
+                if (event.key.keysym.sym == SDLK_d)
+                    camera.yaw -= 1.0 * delta_time;
+                if (event.key.keysym.sym == SDLK_w) {
+                    camera.forward_velocity = vec3_mul(camera.direction, 5.0 * delta_time);
+                    camera.position = vec3_add(camera.position, camera.forward_velocity);
+                }
+                if (event.key.keysym.sym == SDLK_s) {
+                    camera.forward_velocity = vec3_mul(camera.direction, 5.0 * delta_time);
+                    camera.position = vec3_sub(camera.position, camera.forward_velocity);
+                }
                 break;
 
         }
@@ -130,22 +148,30 @@ void update(void) {
 
     previous_frame_time = SDL_GetTicks();
 
-    mesh.rotation.x += 0.6 * delta_time;
-    mesh.rotation.y += 0.6 * delta_time;
-    mesh.rotation.z += 0.6 * delta_time;
+    // mesh.rotation.x += 0.6 * delta_time;
+    // mesh.rotation.y += 0.6 * delta_time;
+    // mesh.rotation.z += 0.6 * delta_time;
 
     // mesh.scale.x += 0.002;
     
     // mesh.translation.x += 0.01;
     mesh.translation.z = 5.0;
 
-    // Change the camera position per animation frame
-    camera.position.x += 0.0 * delta_time;
-    camera.position.y += 0.0 * delta_time;
-
-    // Create the view matrix looking at a hardcoded target
-    vec3_t target = { 0, 0, 4.0 };
+    // Init up as Y-up
     vec3_t up_direction = { 0, 1, 0 };
+   
+    // Initialize the target as positive z
+    vec3_t target = { 0, 0, 1};
+
+    // Calculate the rotation for the camera and camera direction 
+    mat4_t camera_yaw_rotation = mat4_make_rotation_y(camera.yaw);
+    mat4_mul_vec4(camera_yaw_rotation, vec4_from_vec3(target));
+    camera.direction = vec3_from_vec4(mat4_mul_vec4(camera_yaw_rotation, vec4_from_vec3(target))); 
+    
+    // Offset the camera position in the direction where the camera is pointing at
+    target = vec3_add(camera.position, camera.direction);
+    
+    // Create the view matrix
     view_matrix = mat4_look_at(camera.position, target, up_direction);
 
     // Create a scale, rotation and translation matrices that will be used to multiply mesh vertices
