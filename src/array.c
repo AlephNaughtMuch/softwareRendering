@@ -1,7 +1,5 @@
 // array.h is a fork from zauonlok's (github.com/zauonlok) darray.h file with
 // small syntax changes.
-
-#include <stdio.h>
 #include <stdlib.h>
 #include "array.h"
 

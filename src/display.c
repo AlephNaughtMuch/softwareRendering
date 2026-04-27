@@ -1,6 +1,4 @@
 #include "display.h"
-#include "vector.h"
-#include "texture.h"
 
 // Init SDL Window and Renderer
 SDL_Window* window = NULL;
