@@ -1,3 +1,4 @@
+#include <SDL2/SDL_timer.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <SDL2/SDL.h>
@@ -31,6 +32,7 @@ int num_triangles_to_render = 0;
 // Global variables for execution status and game loop ////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////
 bool is_running = false;
+float delta_time = 0;
 int previous_frame_time = 0;
 
 mat4_t world_matrix;
@@ -48,8 +50,7 @@ void setup (void) {
     color_buffer = (uint32_t*) malloc(sizeof(uint32_t) * window_width * window_height);
 
     // Allocate the required memory in bytes to hold the depth buffer
-    z_buffer = (float*) malloc(sizeof(float) * window_width * window_height);
-
+    z_buffer = (float*) malloc(sizeof(float) * window_width * window_height); 
     
     // Create a SDL texture that is used to display the color buffer
     color_buffer_texture = SDL_CreateTexture(
@@ -120,25 +121,27 @@ void update(void) {
     if (time_to_wait > 0 && time_to_wait <= FRAME_TARGET_TIME) {
         SDL_Delay(time_to_wait);
     }
+   
+    // Get a delta time factor converted to seconds to be used to update our game obj
+    delta_time = (SDL_GetTicks() - previous_frame_time) / 1000.0;
 
     // Initialize the array of triangles to render
-    // triangles_to_render = NULL;
     num_triangles_to_render = 0;
 
     previous_frame_time = SDL_GetTicks();
 
-    // mesh.rotation.x += 0.01;
-    // mesh.rotation.y += 0.01;
-    // mesh.rotation.z += 0.01;
+    mesh.rotation.x += 0.6 * delta_time;
+    mesh.rotation.y += 0.6 * delta_time;
+    mesh.rotation.z += 0.6 * delta_time;
 
     // mesh.scale.x += 0.002;
     
     // mesh.translation.x += 0.01;
-    mesh.translation.z = 4.0;
+    mesh.translation.z = 5.0;
 
     // Change the camera position per animation frame
-    camera.position.x += 0.008;
-    camera.position.y += 0.008;
+    camera.position.x += 0.0 * delta_time;
+    camera.position.y += 0.0 * delta_time;
 
     // Create the view matrix looking at a hardcoded target
     vec3_t target = { 0, 0, 4.0 };
