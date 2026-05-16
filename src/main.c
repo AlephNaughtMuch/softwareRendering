@@ -5,6 +5,7 @@
 #include <SDL2/SDL.h>
 
 #include "array.h"
+#include "clipping.h"
 #include "display.h"
 #include "vector.h"
 #include "mesh.h"
@@ -70,6 +71,9 @@ void setup (void) {
     float zfar = 100;
 
     proj_matrix = mat4_make_perspective(fov, aspect, znear, zfar);
+    
+    // Init the frustum planes with a point and a normal    
+    init_frustum_planes(fov, znear, zfar);
     
     // Loads the cube values in the mesh data structure
     load_obj_file_data(mesh_location);
