@@ -161,7 +161,7 @@ void update(void) {
     vec3_t up_direction = { 0, 1, 0 };
    
     // Initialize the target as positive z
-    vec3_t target = { 0, 0, 1};
+    vec3_t target = { 0, 0, 1 };
 
     // Calculate the rotation for the camera and camera direction 
     mat4_t camera_yaw_rotation = mat4_make_rotation_y(camera.yaw);
