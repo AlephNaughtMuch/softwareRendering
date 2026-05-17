@@ -1,5 +1,6 @@
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_timer.h>
+#include <math.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <SDL2/SDL.h>
@@ -64,17 +65,21 @@ void setup (void) {
     
     // Initialize the perspective projection or NDC matrix
     // Define perpsective parameters
-    float fov = M_PI / 3.0; // 60 degrees
-    float aspect = window_height / (float) window_width;
+    float aspectx = window_width  / (float) window_height; 
+    float aspecty = window_height / (float) window_width;
+    
+    float fovy = M_PI / 3.0; // 60 degrees
+    float fovx = 2 * atan(tan(fovy / 2) * aspectx);
+    
     float znear = 0.1;
-    float zfar = 100;
+    float zfar  = 100;
 
-    proj_matrix = mat4_make_perspective(fov, aspect, znear, zfar);
+    proj_matrix = mat4_make_perspective(fovy, aspecty, znear, zfar);
     
     // Init the frustum planes with a point and a normal    
-    init_frustum_planes(fov, znear, zfar);
+    init_frustum_planes(fovx, fovy, znear, zfar);
     
-    // Loads the cube values in the mesh data structure
+    // Loads the cube values in the mesh data structure:w
     load_obj_file_data(mesh_location);
 
     // Loads the texture information from an external PNG file
