@@ -14,6 +14,7 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 - CPU color buffer rendering pipeline
 - Framebuffer clearing and presentation
 - Locked 60 FPS frame timing with event-driven input handling
+- Delta time implementation to decouple simulation speed from frame rate
 
 ### Geometry & Mesh
 - Mesh and triangle data types with dynamic arrays for complex geometry
@@ -28,11 +29,25 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 - NDC / projection matrix
 - Object → world → screen space pipeline with correct Y-axis orientation
 
+### Camera
+- Camera class with look-at matrix model
+- FPS-style movement controls (WASD + up/down)
+- Camera frustum planes for clipping
+
+### View Frustum Clipping
+- Camera frustum plane initialization
+- Polygon-based vertex clipping against all frustum planes
+- Triangle ↔ polygon conversion for clipping pipeline
+- Polygon reconstruction into triangles after clipping
+- UV interpolation preserved correctly through clipping
+
 ### Rendering Modes (interactive toggle)
-- Wireframe rendering
+- Wireframe + vertex rendering (vertices highlighted as red squares)
+- Wireframe only
 - Filled flat-shaded triangles
 - Wireframe + filled combined
-- Textured rendering
+- Textured
+- Textured + wireframe combined
 
 ### Rasterization
 - Line drawing (screen-space)
@@ -74,10 +89,11 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 - Perspective projection: `x' = (fov * x) / z`, `y' = (fov * y) / z`
 - Camera offset handling to avoid division by zero
 - Screen-space coordinate transforms
-- Matrix math: scale, rotation, translation, world, projection
+- Matrix math: scale, rotation, translation, world, projection, look-at (view matrix)
 - Vector math: cross products, dot products, surface normals
 - Barycentric coordinate interpolation for UV mapping
 - Perspective divide for correct texture projection
+- Frustum plane equations and vertex clipping (Sutherland-Hodgman style)
 
 ### Image Processing
 - PNG decoding and pixel format handling (RGBA32)
@@ -117,11 +133,17 @@ make
 
 | Key | Action |
 |-----|--------|
-| `1` | Wireframe only |
-| `2` | Filled triangles |
-| `3` | Wireframe + filled |
-| `4` | Textured |
-| `C` | Toggle backface culling |
+| `1` | Wireframe + vertices |
+| `2` | Wireframe only |
+| `3` | Filled triangles |
+| `4` | Wireframe + filled |
+| `5` | Textured |
+| `6` | Textured + wireframe |
+| `C` | Enable backface culling |
+| `X` | Disable backface culling |
+| `W/S` | Move camera forward/back |
+| `A/D` | Rotate camera yaw left/right |
+| `Up/Down` | Move camera up/down |
 | `ESC` | Exit |
 
 ---
@@ -138,6 +160,8 @@ make
 │   ├── triangle.c / triangle.h
 │   ├── texture.c / texture.h
 │   ├── light.c / light.h
+│   ├── camera.c / camera.h
+│   ├── clipping.c / clipping.h
 │   ├── matrix.c / matrix.h
 │   └── upng.c / upng.h       # Minimal PNG decoding library
 ├── Makefile
@@ -148,7 +172,6 @@ make
 
 ## 🛠 Known Limitations
 
-- No clipping against the view frustum
 - No mesh instancing
 - CPU only — no GPU acceleration
 
@@ -159,9 +182,8 @@ These are intentional at this stage. The goal is to understand every part of the
 ## 🎯 Planned Next Steps
 
 ### Rendering Features
-- View frustum clipping
-- Camera system with movement controls
 - Gouraud / Phong shading models
+- Mesh instancing
 
 ### Performance
 - Dirty rectangle updates
