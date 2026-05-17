@@ -1,6 +1,7 @@
 #ifndef CLIPPING_H
 #define CLIPPING_H
 
+#include "texture.h"
 #include "triangle.h"
 #include "vector.h"
 #define MAX_NUM_POLY_VERTICES 10
@@ -23,12 +24,23 @@ typedef struct {
 
 typedef struct {
     vec3_t vertices[MAX_NUM_POLY_VERTICES];
+    tex2_t texcoords[MAX_NUM_POLY_VERTICES];
     int num_vertices;
 } polygon_t;
 
-void init_frustum_planes(float fovx, float fovy, float z_near, float z_far);
+polygon_t create_polygon_from_triangle(
+    vec3_t v0, 
+    vec3_t v1, 
+    vec3_t v2, 
+    tex2_t t0, 
+    tex2_t t1, 
+    tex2_t t2
+);
 
-polygon_t create_polygon_from_triangle(vec3_t v0, vec3_t v1, vec3_t v2);
+
+float float_lerp(float a, float b, float c);
+
+void init_frustum_planes(float fovx, float fovy, float z_near, float z_far);
 void clip_polygon_against_plane(polygon_t* polygon, int plane);
 void triangles_from_polygon(polygon_t* polygon, triangle_t triangles[], int* num_triangles);
 void clip_polygon(polygon_t* polygon);
