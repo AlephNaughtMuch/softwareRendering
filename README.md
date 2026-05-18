@@ -7,13 +7,10 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 
 
 ## Demos
-Directional light source (flat shading model)
 
-![Demo](assets/output.gif)
-
-Triangle wireframe rendering
-
-![Demo](assets/output2.gif)
+| Directional Light (Flat Shading) | Wireframe |
+|:-:|:-:|
+| ![Lighting](assets/demo_lighting.gif)   |   ![Wireframe](assets/demo_wireframe.gif) |
 
 ## ✨ Current Features
 
@@ -172,9 +169,10 @@ A prebuilt Linux binary is included in the repo if you want to run without compi
 ```
 .
 ├── assets/
-│   ├── bunny.obj             # Stanford Bunny (~70k triangles)
-│   ├── cube.png              # Default texture
-│   └── demo.gif              # README demo
+│   ├── bunny.obj                      # Stanford Bunny (~70k triangles)
+│   ├── cube.png                       # Default texture
+│   └── demo_lighting.gif              # README demo (lighting)
+│   └── demo_wireframe.gif             # README demo (wireframe)
 ├── src/
 │   ├── main.c
 │   ├── display.c / display.h
