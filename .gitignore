@@ -62,3 +62,9 @@ assets/
 
 # renderer
 renderer
+
+# clang
+.clang-format
+.clang-tidy
+.editorconfig
+.gitattributes

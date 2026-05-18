@@ -270,11 +270,11 @@ void draw_triangle_pixel(
     // Only draw the pixel if the depth value is less than the one
     // previously stored in the z-buffer
     interpolated_reciprocal_w = 1.0 - interpolated_reciprocal_w;
-    if (interpolated_reciprocal_w < z_buffer[(window_width * y) + x]) {
+    if (interpolated_reciprocal_w < get_zbuffer_at(x, y)){
         draw_pixel(x, y, color);
 
         // Update the z buffer value with 1/w of this current pixel
-        z_buffer[(window_width * y) + x] = interpolated_reciprocal_w;
+        update_zbuffer_at(x, y, interpolated_reciprocal_w);
 
     }
 }
@@ -336,13 +336,13 @@ void draw_texel(
     // Only draw the pixel if the depth value is less than the one
     // previously stored in the z-buffer
     interpolated_reciprocal_w = 1.0 - interpolated_reciprocal_w;
-    if (interpolated_reciprocal_w < z_buffer[(window_width * y) + x]) {
+    if (interpolated_reciprocal_w < get_zbuffer_at(x, y)){
         // Grab the texture and draw a pixel with the texture's information
         // by linearly accessing the texture array
         draw_pixel(x, y, texture[(texture_width * tex_y) + tex_x]);
     
         // Update the z buffer value with 1/w of this current pixel
-        z_buffer[(window_width * y) + x] = interpolated_reciprocal_w;
+        update_zbuffer_at(x, y, interpolated_reciprocal_w);
 
     }
 

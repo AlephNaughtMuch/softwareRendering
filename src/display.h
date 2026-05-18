@@ -8,42 +8,32 @@
 #define FPS 60
 #define FRAME_TARGET_TIME (1000 / FPS)
 
-typedef enum cull_method {
+enum cull_method {
     CULL_NONE,
     CULL_BACKFACE
-} cull_method_t;
+};
 
-typedef enum render_method {
+enum render_method {
     RENDER_WIRE,
     RENDER_WIRE_VERTEX,
     RENDER_FILL_TRIANGLE,
     RENDER_FILL_TRIANGLE_WIRE,
     RENDER_TEXTURED,
     RENDER_TEXTURED_WIRE
-} render_method_t;
+};
 
-extern cull_method_t cull_method;
-extern render_method_t render_method;
+int get_window_width(void);
+int get_window_height(void);
 
-// Init SDL Window and Renderer
-extern SDL_Window* window;
-extern SDL_Renderer* renderer;
+void set_render_method(int method);
+void set_cull_method(int method);
 
-// Init a color buffer
-extern uint32_t* color_buffer;
+bool is_cull_backface(void);
+bool should_render_textured_triangles(void);
+bool should_render_wireframe(void);
+bool should_render_filled_triangles(void);
+bool should_render_wire_vertex(void);
 
-// Init a depth buffer
-extern float* z_buffer;
-
-// Init window resolution
-extern int window_size_factor;
-extern int window_width;
-extern int window_height;
-
-// Init SDL texture
-extern SDL_Texture* color_buffer_texture;
-
-bool initialize_window(void);
 void draw_pixel(int x, int y, uint32_t color);
 void draw_grid(void);
 void draw_line(int x0, int y0, int x1, int y1, uint32_t color);
@@ -52,6 +42,11 @@ void draw_triangle(int x0, int y0, int x1, int y1, int x2, int y2, uint32_t colo
 void clear_color_buffer(uint32_t color);
 void clear_z_buffer();
 void render_color_buffer(void);
+
+bool initialize_window(void);
 void destroy_window(void);
+
+float get_zbuffer_at(int x, int y);
+void update_zbuffer_at(int x, int y, float value);
 
 #endif 
