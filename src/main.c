@@ -41,8 +41,8 @@ mat4_t world_matrix;
 mat4_t view_matrix;
 mat4_t proj_matrix;
 
-char* mesh_location = "assets/f117.obj";
-char* texture_location = "assets/f117.png";
+char* mesh_location = "assets/bunny.obj";
+char* texture_location = "assets/cube.png";
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Define the renderer's setup, input, update, render and garbage clearing ////////////////////
@@ -178,7 +178,7 @@ void update(void) {
     previous_frame_time = SDL_GetTicks();
 
     // mesh.rotation.x += 0.6 * delta_time;
-    // mesh.rotation.y += 0.6 * delta_time;
+    mesh.rotation.y += 0.6 * delta_time;
     // mesh.rotation.z += 0.6 * delta_time;
 
     // mesh.scale.x += 0.002;
@@ -210,8 +210,18 @@ void update(void) {
     mat4_t rotation_matrix_y = mat4_make_rotation_y(mesh.rotation.y);
     mat4_t rotation_matrix_z = mat4_make_rotation_z(mesh.rotation.z);
 
+    world_matrix = mat4_identity();
+    world_matrix = mat4_mul_mat4(scale_matrix, world_matrix);
+    world_matrix = mat4_mul_mat4(rotation_matrix_x, world_matrix);
+    world_matrix = mat4_mul_mat4(rotation_matrix_y, world_matrix);
+    world_matrix = mat4_mul_mat4(rotation_matrix_z, world_matrix);
+    world_matrix = mat4_mul_mat4(translation_matrix, world_matrix);
+
+    mat4_t world_view_matrix = mat4_mul_mat4(view_matrix, world_matrix);
+
     // Loop all triangle faces of our cube mesh
-    for (int i = 0; i < array_length(mesh.faces); i++) {
+    int face_count = array_length(mesh.faces);
+    for (int i = 0; i < face_count; i++) {
         face_t mesh_face = mesh.faces[i];
 
         vec3_t face_vertices[3];
@@ -225,19 +235,12 @@ void update(void) {
         // Loop all three vertices of this current face and apply transformations
         for (int j = 0; j < 3; j++) {
             vec4_t transformed_vertex = vec4_from_vec3(face_vertices[j]);
-
-            world_matrix = mat4_identity();
-            world_matrix = mat4_mul_mat4(scale_matrix, world_matrix);
-            world_matrix = mat4_mul_mat4(rotation_matrix_x, world_matrix);
-            world_matrix = mat4_mul_mat4(rotation_matrix_y, world_matrix);
-            world_matrix = mat4_mul_mat4(rotation_matrix_z, world_matrix);
-            world_matrix = mat4_mul_mat4(translation_matrix, world_matrix);
-
-            transformed_vertex = mat4_mul_vec4(world_matrix, transformed_vertex);
+            // transformed_vertex = mat4_mul_vec4(world_matrix, transformed_vertex);
 
             // Multiply the view matrix by the vector to transform the scene
             // to camera space.
-            transformed_vertex = mat4_mul_vec4(view_matrix, transformed_vertex);
+            // transformed_vertex = mat4_mul_vec4(view_matrix, transformed_vertex);
+            transformed_vertex = mat4_mul_vec4(world_view_matrix, transformed_vertex);
 
             // Store the transformed vertex
             transformed_vertices[j] = transformed_vertex;
