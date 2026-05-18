@@ -58,8 +58,8 @@ dkms.conf
 .vscode/
 
 # assets
-assets/
-
+# assets/
+non_git_assets/
 # renderer
 # renderer
 

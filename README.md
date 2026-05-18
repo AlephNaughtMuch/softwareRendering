@@ -5,7 +5,15 @@ The project focuses on building a complete rasterization pipeline from the groun
 
 This is part of an ongoing exploration into **rendering engineering / graphics programming**, coming from a VFX/film technical background.
 
----
+
+## Demos
+Directional light source (flat shading model)
+
+![Demo](assets/output.gif)
+
+Triangle wireframe rendering
+
+![Demo](assets/output2.gif)
 
 ## ✨ Current Features
 
@@ -19,7 +27,7 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 ### Geometry & Mesh
 - Mesh and triangle data types with dynamic arrays for complex geometry
 - OBJ file loader — reads arbitrary meshes from disk
-- Hardcoded cube mesh as default fallback
+- Stanford Bunny included as default test mesh (~70k triangles)
 - Per-face and per-triangle color support
 
 ### Transformations
@@ -101,8 +109,11 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 - Perspective-correct interpolation across triangle surfaces
 
 ### Performance
+- World and view matrices combined into a single `world_view_matrix` — halves matrix multiplications per vertex
+- Face count cached before the render loop to avoid repeated `array_length` calls
+- Static triangle buffer (no dynamic allocation per frame)
+- Compiler optimisation via `-O2` flag in Makefile
 - Tight raster loops to minimise unnecessary iteration
-- Memory bandwidth considerations
 - Frame timing and event loop responsiveness
 
 ---
@@ -114,11 +125,19 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 
 ### Linux / macOS:
 ```bash
-gcc src/main.c src/display.c src/vector.c -lSDL2 -lm -o renderer
+make build
+./renderer
 ```
-Or simply:
+
+The Makefile compiles with `-O2` optimisations enabled. For a debug build without optimisations:
 ```bash
-make
+gcc -Wall -std=c99 ./src/*.c -lSDL2 -lm -o renderer
+```
+
+### Prebuilt Binary
+A prebuilt Linux binary is included in the repo if you want to run without compiling:
+```bash
+./renderer
 ```
 
 ---
@@ -152,6 +171,10 @@ make
 
 ```
 .
+├── assets/
+│   ├── bunny.obj             # Stanford Bunny (~70k triangles)
+│   ├── cube.png              # Default texture
+│   └── demo.gif              # README demo
 ├── src/
 │   ├── main.c
 │   ├── display.c / display.h
@@ -164,6 +187,7 @@ make
 │   ├── clipping.c / clipping.h
 │   ├── matrix.c / matrix.h
 │   └── upng.c / upng.h       # Minimal PNG decoding library
+├── renderer                  # Prebuilt Linux binary
 ├── Makefile
 └── README.md
 ```
@@ -186,9 +210,8 @@ These are intentional at this stage. The goal is to understand every part of the
 - Mesh instancing
 
 ### Performance
-- Dirty rectangle updates
 - SIMD optimisations
-- Improved frame timing control
+- Multithreaded rasterization
 
 ### Graphics Programming Progression
 - Software renderer → OpenGL pipeline transition
