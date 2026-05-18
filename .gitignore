@@ -61,7 +61,7 @@ dkms.conf
 assets/
 
 # renderer
-renderer
+# renderer
 
 # clang
 .clang-format
