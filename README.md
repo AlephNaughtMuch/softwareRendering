@@ -10,7 +10,7 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 
 | Directional Light (Flat Shading) | Wireframe |
 |:-:|:-:|
-| ![Lighting](assets/demo_lighting.gif)   |   ![Wireframe](assets/demo_wireframe.gif) |
+| ![Lighting](assets/demo_lighting.gif)  |  ![Wireframe](assets/demo_wireframe.gif) |
 
 ## ✨ Current Features
 
@@ -37,7 +37,10 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 ### Camera
 - Camera class with look-at matrix model
 - FPS-style movement controls (WASD + up/down)
+- Yaw controls (rotate left/right)
+- Pitch controls (look up/down)
 - Camera frustum planes for clipping
+- Refactored camera and light into dedicated modules with clean getter/setter interfaces
 
 ### View Frustum Clipping
 - Camera frustum plane initialization
@@ -160,6 +163,7 @@ A prebuilt Linux binary is included in the repo if you want to run without compi
 | `W/S` | Move camera forward/back |
 | `A/D` | Rotate camera yaw left/right |
 | `Up/Down` | Move camera up/down |
+| `J/K` | Pitch camera up/down |
 | `ESC` | Exit |
 
 ---
