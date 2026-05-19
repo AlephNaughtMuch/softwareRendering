@@ -10,8 +10,8 @@ typedef struct
     vec3_t direction;
 } light_t;
 
-extern light_t light;
-
+void init_light(vec3_t direction);
+vec3_t get_light_direction(void);
 
 float light_alignment_factor(vec3_t surface_normal, vec3_t light_direction);
 uint32_t light_apply_intensity(uint32_t original_color, float percentage_factor);

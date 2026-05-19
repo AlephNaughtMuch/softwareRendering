@@ -14,19 +14,13 @@ static uint32_t* color_buffer = NULL;
 static float* z_buffer = NULL;
 
 // Init window resolution
-static int window_size_factor = 2;
+static int window_size_factor = 4;
 static int window_width = 1920;
 static int window_height = 1080;
 
 // Init render and cull methods
 static int render_method = 0;
 static int cull_method = 0;
-
-// Define render method and culling
-// render_method_t render_method = RENDER_FILL_TRIANGLE;
-// cull_method_t cull_method = CULL_BACKFACE;
-
-
 
 // Setters and getters
 int get_window_width(void) {
@@ -105,13 +99,16 @@ bool initialize_window(void) {
     SDL_DisplayMode display_mode;
     SDL_GetCurrentDisplayMode(0, &display_mode);
 
+    int fullscreen_width = display_mode.w;
+    int fullscreen_height = display_mode.h;
+
     window_width  = display_mode.w / window_size_factor;
     window_height = display_mode.h / window_size_factor;
 
 
     // Create a SDL Window
     window = SDL_CreateWindow("SoftwareRenderer", SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED, window_width, window_height, SDL_WINDOW_RESIZABLE);
+        SDL_WINDOWPOS_CENTERED, fullscreen_width, fullscreen_height, SDL_WINDOW_RESIZABLE);
     if (!window) {
         fprintf(stderr, "Error creating SDL window.\n");
         return false;

@@ -52,6 +52,12 @@ void setup (void) {
     set_render_method(RENDER_WIRE);
     set_cull_method(CULL_BACKFACE);
 
+    // Init the light
+    init_light(vec3_new(0,0,1));
+
+    // Init the camera
+    init_camera(vec3_new(0,0,0), vec3_new(0,0,1));
+
     // Initialize the perspective projection or NDC matrix
     // Define perpsective parameters
     float aspectx = get_window_width()  / (float) get_window_height();
@@ -128,32 +134,59 @@ void process_input(void) {
 
                 // FPS Camera movements
                 if (event.key.keysym.sym == SDLK_UP) {
-                    camera.position.y += 3.0 * delta_time;
+                    update_camera_position(vec3_new(
+                        0,
+                        3.0 * delta_time,
+                        0
+                    ));
                     break;
                 }
                 if (event.key.keysym.sym == SDLK_DOWN) {
-                    camera.position.y -= 3.0 * delta_time;
+                    update_camera_position(vec3_new(
+                        0,
+                        -3.0 * delta_time,
+                        0
+                    ));
                     break;
                 }
                 if (event.key.keysym.sym == SDLK_a) {
-                    camera.yaw += 1.0 * delta_time;
+                    update_camera_yaw(delta_time);
                     break;
                 }
                 if (event.key.keysym.sym == SDLK_d) {
-                    camera.yaw -= 1.0 * delta_time;
+                    update_camera_yaw(-delta_time);
                     break;
                 }
                 if (event.key.keysym.sym == SDLK_w) {
-                    camera.forward_velocity = vec3_mul(camera.direction, 5.0 * delta_time);
-                    camera.position = vec3_add(camera.position, camera.forward_velocity);
+                    set_camera_forward_velocity(vec3_mul(
+                        get_camera_direction(),
+                        5.0 * delta_time
+                    ));
+                    set_camera_position(vec3_add(
+                        get_camera_position(),
+                        get_camera_forward_velocity()
+                    ));
                     break;
                 }
                 if (event.key.keysym.sym == SDLK_s) {
-                    camera.forward_velocity = vec3_mul(camera.direction, 5.0 * delta_time);
-                    camera.position = vec3_sub(camera.position, camera.forward_velocity);
+                    set_camera_forward_velocity(vec3_mul(
+                        get_camera_direction(),
+                        5.0 * delta_time
+                    ));
+                    set_camera_position(vec3_sub(
+                        get_camera_position(),
+                        get_camera_forward_velocity()
+                    ));
                     break;
                 }
-
+                if (event.key.keysym.sym == SDLK_j) {
+                    update_camera_pitch(delta_time);
+                    break;
+                }
+                if (event.key.keysym.sym == SDLK_k) {
+                    update_camera_pitch(-delta_time);
+                    break;
+                }
                 break;
 
         }
@@ -186,26 +219,20 @@ void update(void) {
     // mesh.translation.x += 0.01;
     mesh.translation.z = 5.0;
 
-    // Init up as Y-up
+
+    // Update camera look at target to create view matrix
+    vec3_t target = get_camera_lookat_target();
     vec3_t up_direction = { 0, 1, 0 };
 
-    // Initialize the target as positive z
-    vec3_t target = { 0, 0, 1 };
-
-    // Calculate the rotation for the camera and camera direction
-    mat4_t camera_yaw_rotation = mat4_make_rotation_y(camera.yaw);
-    mat4_mul_vec4(camera_yaw_rotation, vec4_from_vec3(target));
-    camera.direction = vec3_from_vec4(mat4_mul_vec4(camera_yaw_rotation, vec4_from_vec3(target)));
-
-    // Offset the camera position in the direction where the camera is pointing at
-    target = vec3_add(camera.position, camera.direction);
-
     // Create the view matrix
-    view_matrix = mat4_look_at(camera.position, target, up_direction);
+    view_matrix = mat4_look_at(get_camera_position(), target, up_direction);
 
     // Create a scale, rotation and translation matrices that will be used to multiply mesh vertices
     mat4_t scale_matrix = mat4_make_scale(mesh.scale.x, mesh.scale.y, mesh.scale.z);
-    mat4_t translation_matrix = mat4_make_translation(mesh.translation.x, mesh.translation.y, mesh.translation.z);
+    mat4_t translation_matrix = mat4_make_translation(
+                                                    mesh.translation.x,
+                                                    mesh.translation.y,
+                                                    mesh.translation.z);
     mat4_t rotation_matrix_x = mat4_make_rotation_x(mesh.rotation.x);
     mat4_t rotation_matrix_y = mat4_make_rotation_y(mesh.rotation.y);
     mat4_t rotation_matrix_z = mat4_make_rotation_z(mesh.rotation.z);
@@ -319,7 +346,7 @@ void update(void) {
             }
 
             // Calculate color and lighting
-            float light_intensity_factor = light_alignment_factor(normal, light.direction);
+            float light_intensity_factor = light_alignment_factor(normal, get_light_direction());
             uint32_t triangle_color = light_apply_intensity(mesh_face.color, light_intensity_factor);
 
             triangle_t triangle_to_render= {
