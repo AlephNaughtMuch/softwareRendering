@@ -181,6 +181,8 @@ A prebuilt Linux binary is included in the repo if you want to run without compi
 │   ├── cube.png                       # Default texture
 │   └── demo_lighting.gif              # README demo (lighting)
 │   └── demo_wireframe.gif             # README demo (wireframe)
+│   └── demo_textured.gif              # README demo (textured)
+│   └── demo_textured_wireframe.gif    # README demo (textured-wireframe)
 ├── src/
 │   ├── main.c
 │   ├── display.c / display.h
@@ -193,7 +195,7 @@ A prebuilt Linux binary is included in the repo if you want to run without compi
 │   ├── clipping.c / clipping.h
 │   ├── matrix.c / matrix.h
 │   ├── array.h                        # Dynamic array implementation
-│   └── upng.c / upng.h               # Minimal PNG decoding library
+│   └── upng.c / upng.h                # Minimal PNG decoding library
 ├── renderer                           # Prebuilt Linux binary
 ├── Makefile
 └── README.md
