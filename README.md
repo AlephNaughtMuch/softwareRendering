@@ -11,7 +11,8 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 | Directional Light (Flat Shading) | Wireframe |
 |:-:|:-:|
 | ![Lighting](assets/demo_lighting.gif)  |  ![Wireframe](assets/demo_wireframe.gif) |
-
+| Textured | Textured + Wireframe |
+| ![Lighting](assets/demo_textured.gif)  |  ![Wireframe](assets/demo_textured_wireframe.gif) |
 ## ✨ Current Features
 
 ### Core Pipeline
@@ -24,6 +25,8 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 ### Geometry & Mesh
 - Mesh and triangle data types with dynamic arrays for complex geometry
 - OBJ file loader — reads arbitrary meshes from disk
+- Multi-mesh scene support — load and render multiple meshes with independent transforms and textures
+- Per-mesh scale, translation, and rotation properties
 - Stanford Bunny included as default test mesh (~70k triangles)
 - Per-face and per-triangle color support
 
@@ -75,6 +78,7 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 ### Lighting
 - Directional light source (flat shading model)
 - Per-face light intensity based on surface normal alignment
+- Face normal calculation refactored into the graphics pipeline for clarity and correctness
 
 ### Texture Mapping
 - PNG texture loading via the `upng` library (minimal, dependency-free)
@@ -181,15 +185,16 @@ A prebuilt Linux binary is included in the repo if you want to run without compi
 │   ├── main.c
 │   ├── display.c / display.h
 │   ├── vector.c / vector.h
-│   ├── mesh.c / mesh.h
+│   ├── mesh.c / mesh.h                # Multi-mesh scene management
 │   ├── triangle.c / triangle.h
 │   ├── texture.c / texture.h
 │   ├── light.c / light.h
 │   ├── camera.c / camera.h
 │   ├── clipping.c / clipping.h
 │   ├── matrix.c / matrix.h
-│   └── upng.c / upng.h       # Minimal PNG decoding library
-├── renderer                  # Prebuilt Linux binary
+│   ├── array.h                        # Dynamic array implementation
+│   └── upng.c / upng.h               # Minimal PNG decoding library
+├── renderer                           # Prebuilt Linux binary
 ├── Makefile
 └── README.md
 ```
