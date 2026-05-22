@@ -62,19 +62,19 @@ void draw_filled_triangle (
 
     if (y1 - y0 != 0) { inv_slope_1 = (float) (x1 - x0) / abs(y1 - y0); }
     if (y2 - y0 != 0) { inv_slope_2 = (float) (x2 - x0) / abs(y2 - y0); }
-    
+
     if (y1 - y0 != 0) {
         for (int y = y0; y <= y1; y++) {
-    
+
             int x_start = x1 + (y - y1) * inv_slope_1;
             int x_end = x0 + (y - y0) * inv_slope_2;
-    
+
             if (x_end < x_start) { int_swap(&x_start, &x_end); }
-    
+
             for (int x = x_start; x < x_end; x++) {
                 draw_triangle_pixel(x, y, point_a, point_b, point_c, color);
             }
-    
+
         }
     }
 
@@ -84,19 +84,19 @@ void draw_filled_triangle (
     inv_slope_1 = 0;
 
     if (y2 - y1 != 0) { inv_slope_1 = (float) (x2 - x1) / abs(y2 - y1); }
-    
+
     if (y2 - y1 != 0) {
         for (int y = y1; y <= y2; y++) {
-    
+
             int x_start = x1 + (y - y1) * inv_slope_1;
             int x_end = x0 + (y - y0) * inv_slope_2;
-    
+
             if (x_end < x_start) { int_swap(&x_start, &x_end); }
-    
+
             for (int x = x_start; x < x_end; x++) {
                 draw_triangle_pixel(x, y, point_a, point_b, point_c, color);
             }
-    
+
         }
     }
 
@@ -107,7 +107,7 @@ void draw_textured_triangle (
     int x0, int y0, float z0, float w0, float u0, float v0,
     int x1, int y1, float z1, float w1, float u1, float v1,
     int x2, int y2, float z2, float w2, float u2, float v2,
-    uint32_t* texture 
+    upng_t* texture
 ) {
     //////////////////////////////////////////////////////////
     // Sort the vertices (y0 < y1 <y2) ///////////////////////
@@ -147,7 +147,7 @@ void draw_textured_triangle (
         float_swap(&v0, &v1);
     }
 
-    // Flip the V component of the texture to account for 
+    // Flip the V component of the texture to account for
     // inverted UV coordinate system
     v0 = 1.0 - v0;
     v1 = 1.0 - v1;
@@ -173,19 +173,19 @@ void draw_textured_triangle (
 
     if (y1 - y0 != 0) { inv_slope_1 = (float) (x1 - x0) / abs(y1 - y0); }
     if (y2 - y0 != 0) { inv_slope_2 = (float) (x2 - x0) / abs(y2 - y0); }
-    
+
     if (y1 - y0 != 0) {
         for (int y = y0; y <= y1; y++) {
-    
+
             int x_start = x1 + (y - y1) * inv_slope_1;
             int x_end = x0 + (y - y0) * inv_slope_2;
-    
+
             if (x_end < x_start) { int_swap(&x_start, &x_end); }
-    
+
             for (int x = x_start; x < x_end; x++) {
                 draw_texel(x, y, texture, point_a, point_b, point_c, a_uv, b_uv, c_uv);
             }
-    
+
         }
     }
 
@@ -195,19 +195,19 @@ void draw_textured_triangle (
     inv_slope_1 = 0;
 
     if (y2 - y1 != 0) { inv_slope_1 = (float) (x2 - x1) / abs(y2 - y1); }
-    
+
     if (y2 - y1 != 0) {
         for (int y = y1; y <= y2; y++) {
-    
+
             int x_start = x1 + (y - y1) * inv_slope_1;
             int x_end = x0 + (y - y0) * inv_slope_2;
-    
+
             if (x_end < x_start) { int_swap(&x_start, &x_end); }
-    
+
             for (int x = x_start; x < x_end; x++) {
                 draw_texel(x, y, texture, point_a, point_b, point_c, a_uv, b_uv, c_uv);
             }
-    
+
         }
     }
 
@@ -223,9 +223,9 @@ vec3_t barycenteric_weights(vec2_t a, vec2_t b, vec2_t c, vec2_t p) {
     vec2_t pc = vec2_sub(c, p);
     vec2_t pb = vec2_sub(b, p);
     vec2_t ap = vec2_sub(p, a);
-    
+
     // Area of the full parallelogram || AC X AB||
-    float area_parallelogram_abc = (ac.x * ab.y - ac.y * ab.x); 
+    float area_parallelogram_abc = (ac.x * ab.y - ac.y * ab.x);
     // Calculate alpha, beta and gamma (areal coordinates for the point P)
     float alpha = (pc.x * pb.y - pc.y * pb.x) / area_parallelogram_abc;
     float beta = (ac.x * ap.y - ac.y * ap.x) / area_parallelogram_abc;
@@ -243,8 +243,8 @@ vec3_t barycenteric_weights(vec2_t a, vec2_t b, vec2_t c, vec2_t p) {
 void draw_triangle_pixel(
     int x,
     int y,
-    vec4_t point_a, 
-    vec4_t point_b, 
+    vec4_t point_a,
+    vec4_t point_b,
     vec4_t point_c,
     uint32_t color
 ) {
@@ -266,7 +266,7 @@ void draw_triangle_pixel(
 
     // Find the reciprocal of the interpolated depth for the current pixel
     interpolated_reciprocal_w = (1 / point_a.w) * alpha + (1 / point_b.w) * beta + (1 / point_c.w) * gamma;
-    
+
     // Only draw the pixel if the depth value is less than the one
     // previously stored in the z-buffer
     interpolated_reciprocal_w = 1.0 - interpolated_reciprocal_w;
@@ -283,17 +283,17 @@ void draw_triangle_pixel(
 // Function to draw the textured pixel at position x and y //////////////////
 /////////////////////////////////////////////////////////////////////////////
 void draw_texel(
-    int x, 
-    int y, 
-    uint32_t* texture,
-    vec4_t point_a, 
-    vec4_t point_b, 
+    int x,
+    int y,
+    upng_t* texture,
+    vec4_t point_a,
+    vec4_t point_b,
     vec4_t point_c,
     tex2_t a_uv,
     tex2_t b_uv,
     tex2_t c_uv
 ) {
-    
+
     // Get weights for P
     vec2_t p = {x,y};
 
@@ -315,16 +315,20 @@ void draw_texel(
 
     // Find the reciprocal of the interpolated depth for the current pixel
     interpolated_reciprocal_w = (1 / point_a.w) * alpha + (1 / point_b.w) * beta + (1 / point_c.w) * gamma;
-    
 
-    // Find the UVs with the depth divide and barycentric weights for the current pixel 
+
+    // Find the UVs with the depth divide and barycentric weights for the current pixel
     interpolated_u = (a_uv.u / point_a.w) * alpha + (b_uv.u / point_b.w) * beta + (c_uv.u / point_c.w) * gamma;
     interpolated_v = (a_uv.v / point_a.w) * alpha + (b_uv.v / point_b.w) * beta + (c_uv.v / point_c.w) * gamma;
-    
+
     // Undo the perspective divide for the interpolated UVs by dividing by the interpolated depth
     if (fabsf(interpolated_reciprocal_w) < 1e-6f) { return; } // skip degenerate pixel
     interpolated_u /= interpolated_reciprocal_w;
     interpolated_v /= interpolated_reciprocal_w;
+
+    // Get the mesh texture width and height
+    int texture_width = upng_get_width(texture);
+    int texture_height = upng_get_height(texture);
 
     // Grab the texture cooridnates according to the texture's resolution
     int tex_x = (int) (interpolated_u * texture_width);
@@ -337,10 +341,12 @@ void draw_texel(
     // previously stored in the z-buffer
     interpolated_reciprocal_w = 1.0 - interpolated_reciprocal_w;
     if (interpolated_reciprocal_w < get_zbuffer_at(x, y)){
+        // Get the buffer of colours from the texture
+        uint32_t* texture_buffer = (uint32_t*) upng_get_buffer(texture);
         // Grab the texture and draw a pixel with the texture's information
         // by linearly accessing the texture array
-        draw_pixel(x, y, texture[(texture_width * tex_y) + tex_x]);
-    
+        draw_pixel(x, y, texture_buffer[(texture_width * tex_y) + tex_x]);
+
         // Update the z buffer value with 1/w of this current pixel
         update_zbuffer_at(x, y, interpolated_reciprocal_w);
 
