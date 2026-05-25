@@ -61,6 +61,8 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 - Wireframe + filled combined
 - Textured
 - Textured + wireframe combined
+- Phong shading with specular highlights
+- Phong shading + wireframe combined
 
 ### Rasterization
 - Line drawing (screen-space)
@@ -78,8 +80,12 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 - Static maximum triangle buffer (no dynamic allocation per frame)
 
 ### Lighting
-- Directional light source (flat shading model)
-- Per-face light intensity based on surface normal alignment
+- Directional light source
+- Flat shading — per-face light intensity based on surface normal alignment
+- Phong shading — per-pixel lighting with smooth normal interpolation
+- Phong reflection model — ambient, diffuse, and specular components
+- Per-mesh material system (ka, kd, ks, shininess)
+- White specular highlights independent of object color
 - Face normal calculation refactored into the graphics pipeline for clarity and correctness
 
 ### Texture Mapping
@@ -105,9 +111,12 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 - Screen-space coordinate transforms
 - Matrix math: scale, rotation, translation, world, projection, look-at (view matrix)
 - Vector math: cross products, dot products, surface normals
-- Barycentric coordinate interpolation for UV mapping
+- Barycentric coordinate interpolation for UV mapping and normal interpolation
 - Perspective divide for correct texture projection
 - Frustum plane equations and vertex clipping (Sutherland-Hodgman style)
+- Phong reflection model: ambient + diffuse + specular
+- Reflection vector computation: R = 2(N·L)N - L
+- Per-pixel normal interpolation for smooth shading
 
 ### Image Processing
 - PNG decoding and pixel format handling (RGBA32)
@@ -119,6 +128,8 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 - Face count cached before the render loop to avoid repeated `array_length` calls
 - Static triangle buffer (no dynamic allocation per frame)
 - Compiler optimisation via `-O2` flag in Makefile
+- Mesh-level frustum check — skips per-face clipping entirely when mesh is fully inside the frustum
+- Fast path for non-clipped triangles — projects directly without polygon conversion overhead
 - Tight raster loops to minimise unnecessary iteration
 - Frame timing and event loop responsiveness
 
@@ -160,10 +171,12 @@ A prebuilt Linux binary is included in the repo if you want to run without compi
 |-----|--------|
 | `1` | Wireframe + vertices |
 | `2` | Wireframe only |
-| `3` | Filled triangles |
+| `3` | Filled triangles (flat shading) |
 | `4` | Wireframe + filled |
 | `5` | Textured |
 | `6` | Textured + wireframe |
+| `7` | Phong shading |
+| `8` | Phong shading + wireframe |
 | `C` | Enable backface culling |
 | `X` | Disable backface culling |
 | `W/S` | Move camera forward/back |
@@ -181,10 +194,12 @@ A prebuilt Linux binary is included in the repo if you want to run without compi
 ├── assets/
 │   ├── bunny.obj                      # Stanford Bunny (~70k triangles)
 │   ├── cube.png                       # Default texture
-│   └── demo_lighting.gif              # README demo (lighting)
-│   └── demo_wireframe.gif             # README demo (wireframe)
-│   └── demo_textured.gif              # README demo (textured)
-│   └── demo_textured_wireframe.gif    # README demo (textured-wireframe)
+│   ├── demo_phong.gif                 # README demo (Phong shading)
+│   ├── demo_phong_wireframe.gif       # README demo (Phong + wireframe)
+│   ├── demo_lighting.gif              # README demo (flat shading)
+│   ├── demo_wireframe.gif             # README demo (wireframe)
+│   ├── demo_textured.gif              # README demo (textured)
+│   └── demo_textured_wireframe.gif    # README demo (textured + wireframe)
 ├── src/
 │   ├── main.c
 │   ├── display.c / display.h
@@ -196,6 +211,7 @@ A prebuilt Linux binary is included in the repo if you want to run without compi
 │   ├── camera.c / camera.h
 │   ├── clipping.c / clipping.h
 │   ├── matrix.c / matrix.h
+│   ├── material.c / material.h        # Per-mesh Phong material properties
 │   ├── array.h                        # Dynamic array implementation
 │   └── upng.c / upng.h                # Minimal PNG decoding library
 ├── renderer                           # Prebuilt Linux binary
@@ -217,7 +233,7 @@ These are intentional at this stage. The goal is to understand every part of the
 ## 🎯 Planned Next Steps
 
 ### Rendering Features
-- Gouraud / Phong shading models
+- Dithered NPR rendering mode
 - Mesh instancing
 
 ### Performance
