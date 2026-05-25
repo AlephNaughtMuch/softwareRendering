@@ -2,6 +2,7 @@
 #define TRIANGLE_H
 
 #include <stdint.h>
+#include "material.h"
 #include "vector.h"
 #include "texture.h"
 #include "upng.h"
@@ -24,9 +25,11 @@ typedef struct
 typedef struct
 {
     vertex_t vertices[3];
+    vec4_t cam_vertices[3];
     tex2_t texcoords[3];
     uint32_t color;
     upng_t* texture;
+    material_t material;
 } triangle_t;
 
 vec3_t get_triangle_normal(vec4_t vertices[3]);
@@ -38,17 +41,7 @@ void draw_filled_triangle (
     uint32_t color
 );
 
-void draw_filled_triangle_phong (
-    int x0, int y0, float z0, float w0,
-    int x1, int y1, float z1, float w1,
-    int x2, int y2, float z2, float w2,
-
-    vec3_t normal_a,
-    vec3_t normal_b,
-    vec3_t normal_c,
-
-    uint32_t color
-);
+void draw_filled_triangle_phong(triangle_t* t);
 
 void draw_textured_triangle (
     int x0, int y0, float z0, float w0, float u0, float v0,
@@ -66,17 +59,7 @@ void draw_triangle_pixel(
     uint32_t color
 );
 
-void draw_triangle_phong_pixel(
-    int x,
-    int y,
-    vec4_t point_a,
-    vec4_t point_b,
-    vec4_t point_c,
-    vec3_t normal_a,
-    vec3_t normal_b,
-    vec3_t normal_c,
-    uint32_t color
-);
+void draw_triangle_phong_pixel(int x, int y, triangle_t* t, material_t material);
 
 void draw_texel(
     int x,

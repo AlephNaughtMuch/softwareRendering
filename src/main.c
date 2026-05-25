@@ -9,6 +9,8 @@
 #include "array.h"
 #include "clipping.h"
 #include "display.h"
+#include "material.h"
+#include "triangle.h"
 #include "vector.h"
 #include "mesh.h"
 #include "matrix.h"
@@ -42,6 +44,7 @@ mat4_t proj_matrix;
 
 char* mesh_location = "assets/bunny.obj";
 char* texture_location = "assets/cube.png";
+
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Define the renderer's setup, input, update, render and garbage clearing ////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -51,7 +54,7 @@ void setup (void) {
     set_cull_method(CULL_BACKFACE);
 
     // Init the light
-    init_light(vec3_new(1,-1,-1));
+    init_light(vec3_new(1,-1,1));
 
     // Init the camera
     init_camera(vec3_new(0,0,0), vec3_new(0,0,1));
@@ -78,16 +81,27 @@ void setup (void) {
         texture_location,
         vec3_new(1,1,1),
         vec3_new(0,0,8),
-        vec3_new(0,0,0)
+        vec3_new(0,0,0),
+        material_new(0.1, 0.7, .8, 32)
     );
 
     // load_mesh(
     //     mesh_location,
     //     texture_location,
     //     vec3_new(1,1,1),
-    //     vec3_new(3,0,8),
-    //     vec3_new(0,0,0)
+    //     vec3_new(-2,0,8),
+    //     vec3_new(0,0,0),
+    //     material_new(0.1, 0.7, .8, 32)
     // );
+
+
+    // After load_mesh
+    mesh_t* bunny = get_mesh(0);
+    uint32_t bunny_color = 0xFF939933; // warm brown
+    int face_count = array_length(bunny->faces);
+    for (int i = 0; i < face_count; i++) {
+        bunny->faces[i].color = bunny_color;
+    }
 
 }
 
@@ -254,15 +268,19 @@ static uint32_t calculate_triangle_color(vec3_t face_normal, uint32_t base_color
 
 static void push_triangle(
     vec4_t p0, vec4_t p1, vec4_t p2,
+    vec4_t c0, vec4_t c1, vec4_t c2,
     vec3_t n0, vec3_t n1, vec3_t n2,
     tex2_t uv0, tex2_t uv1, tex2_t uv2,
-    uint32_t color, upng_t* texture
+    uint32_t color, upng_t* texture, material_t material
 ) {
     if (num_triangles_to_render >= MAX_TRIANGLES_PER_MESH) return;
     triangle_t* tr = &triangles_to_render[num_triangles_to_render++];
     tr->vertices[0].position = p0;
     tr->vertices[1].position = p1;
     tr->vertices[2].position = p2;
+    tr->cam_vertices[0]      = c0;
+    tr->cam_vertices[1]      = c1;
+    tr->cam_vertices[2]      = c2;
     tr->vertices[0].normal   = n0;
     tr->vertices[1].normal   = n1;
     tr->vertices[2].normal   = n2;
@@ -271,13 +289,15 @@ static void push_triangle(
     tr->texcoords[2]         = uv2;
     tr->color                = color;
     tr->texture              = texture;
+    tr->material             = material;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Process the graphics pipeline stages for all the mesh triangles ////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 void process_graphics_pipeline(mesh_t* mesh) {
-    mesh->rotation.y += 0.6 * delta_time;
+    mesh->rotation.y += 0.3 * delta_time;
+    // mesh->rotation.y = M_PI/3.0;
 
     // Update camera look at target to create view matrix
     vec3_t target = get_camera_lookat_target();
@@ -412,9 +432,10 @@ void process_graphics_pipeline(mesh_t* mesh) {
                     project_vertex(tc->vertices[0].position, proj_matrix, width, height),
                     project_vertex(tc->vertices[1].position, proj_matrix, width, height),
                     project_vertex(tc->vertices[2].position, proj_matrix, width, height),
+                    tc->vertices[0].position, tc->vertices[1].position, tc->vertices[2].position,
                     tc->vertices[0].normal, tc->vertices[1].normal, tc->vertices[2].normal,
                     tc->texcoords[0], tc->texcoords[1], tc->texcoords[2],
-                    triangle_color, mesh->texture
+                    triangle_color, mesh->texture, mesh->material
                 );
             }
         } else {
@@ -425,9 +446,10 @@ void process_graphics_pipeline(mesh_t* mesh) {
                 project_vertex(transformed_vertices[0], proj_matrix, width, height),
                 project_vertex(transformed_vertices[1], proj_matrix, width, height),
                 project_vertex(transformed_vertices[2], proj_matrix, width, height),
+                transformed_vertices[0], transformed_vertices[1],transformed_vertices[2],
                 transformed_normals[0], transformed_normals[1], transformed_normals[2],
                 mesh_face.a_uv, mesh_face.b_uv, mesh_face.c_uv,
-                triangle_color, mesh->texture
+                triangle_color, mesh->texture, mesh->material
             );
         }
 
@@ -449,15 +471,6 @@ void update(void) {
     num_triangles_to_render = 0;
     previous_frame_time = SDL_GetTicks();
 
-    // Loop all the meshes of our scene
-    // mesh.rotation.x += 0.6 * delta_time;
-    // mesh->rotation.y += 0.6 * delta_time;
-    // mesh.rotation.z += 0.6 * delta_time;
-
-    // mesh.scale.x += 0.002;
-
-    // mesh.translation.x += 0.01;
-    // mesh.translation.z = 5.0;
 
     for (int mesh_index = 0; mesh_index < get_num_meshes(); mesh_index++) {
         mesh_t* mesh = get_mesh(mesh_index);
@@ -474,7 +487,6 @@ void render(void) {
     // Loop all projected triangles and render them
     for (int i = 0; i < num_triangles_to_render; i++) {
         triangle_t triangle = triangles_to_render[i];
-        // printf("triangle normal: %f %f %f\n", triangle.vertices->normal.x,  triangle.vertices->normal.y,  triangle.vertices->normal.z);
 
         if (should_render_filled_triangles()) {
             draw_filled_triangle(
@@ -498,28 +510,7 @@ void render(void) {
         }
 
         if (should_render_phong_filled_triangles()) {
-            draw_filled_triangle_phong(
-                triangle.vertices[0].position.x,
-                triangle.vertices[0].position.y,
-                triangle.vertices[0].position.z,
-                triangle.vertices[0].position.w,
-
-                triangle.vertices[1].position.x,
-                triangle.vertices[1].position.y,
-                triangle.vertices[1].position.z,
-                triangle.vertices[1].position.w,
-
-                triangle.vertices[2].position.x,
-                triangle.vertices[2].position.y,
-                triangle.vertices[2].position.z,
-                triangle.vertices[2].position.w,
-
-                triangle.vertices[0].normal,
-                triangle.vertices[1].normal,
-                triangle.vertices[2].normal,
-
-                triangle.color
-            );
+            draw_filled_triangle_phong(&triangle);
         }
 
         if (should_render_textured_triangles()) {
@@ -569,17 +560,6 @@ void render(void) {
     }
 
     render_color_buffer();
-    static int frame_count = 0;
-    static uint32_t fps_timer = 0;
-
-    frame_count++;
-    uint32_t current_time = SDL_GetTicks();
-
-    if (current_time - fps_timer >= 1000) {
-        printf("FPS: %d ", frame_count);
-        frame_count = 0;
-        fps_timer = current_time;
-    }
 }
 
 void free_resources(void) {

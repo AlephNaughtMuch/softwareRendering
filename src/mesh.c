@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "array.h"
+#include "material.h"
 #include "vector.h"
 #include "vertex.h"
 #include "mesh.h"
@@ -11,14 +12,24 @@
 static mesh_t meshes[MAX_NUM_MESHES];
 static int mesh_count = 0;
 
-
-void load_mesh(char* obj_filename, char* png_filename, vec3_t scale, vec3_t translation, vec3_t rotation) {
+void load_mesh(
+    char* obj_filename,
+    char* png_filename,
+    vec3_t scale,
+    vec3_t translation,
+    vec3_t rotation,
+    material_t material
+) {
     load_mesh_obj_data(&meshes[mesh_count], obj_filename);
     load_mesh_png_data(&meshes[mesh_count], png_filename);
 
     meshes[mesh_count].scale = scale;
     meshes[mesh_count].translation = translation;
     meshes[mesh_count].rotation = rotation;
+    meshes[mesh_count].material.ka = material.ka;
+    meshes[mesh_count].material.kd = material.kd;
+    meshes[mesh_count].material.ks = material.ks;
+    meshes[mesh_count].material.shininess = material.shininess;
 
     mesh_count++;
 }
@@ -77,7 +88,7 @@ void load_mesh_obj_data(mesh_t* mesh, char* obj_filename) {
                 .a_normal = normals[normal_indices[0] - 1],
                 .b_normal = normals[normal_indices[1] - 1],
                 .c_normal = normals[normal_indices[2] - 1],
-                .color    = 0xFFFFFFFF
+                .color    = 0xFF808080
             };
 
             array_push(mesh->faces, face);
@@ -88,6 +99,7 @@ void load_mesh_obj_data(mesh_t* mesh, char* obj_filename) {
     array_free(texcoords);
     fclose(model_file);
 }
+
 void load_mesh_png_data(mesh_t* mesh, char* png_filename) {
     upng_t* png_image = upng_new_from_file(png_filename);
 
@@ -99,7 +111,6 @@ void load_mesh_png_data(mesh_t* mesh, char* png_filename) {
         }
     }
 }
-
 
 int get_num_meshes(void) {
     return mesh_count;

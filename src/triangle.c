@@ -1,8 +1,10 @@
 #include "triangle.h"
 #include "display.h"
 #include "light.h"
+#include "material.h"
 #include "swap.h"
 #include "vector.h"
+#include <math.h>
 #include <stdint.h>
 
 #define EPSILON 0.001
@@ -121,131 +123,71 @@ void draw_filled_triangle (
 
 }
 
-void draw_filled_triangle_phong (
-    int x0, int y0, float z0, float w0,
-    int x1, int y1, float z1, float w1,
-    int x2, int y2, float z2, float w2,
+void draw_filled_triangle_phong(triangle_t* t) {
+    // Work on a local copy so we can sort without mutating the original
+    triangle_t tri = *t;
 
-    vec3_t normal_a,
-    vec3_t normal_b,
-    vec3_t normal_c,
+    // Extract y values for sorting
+    int y0 = (int)tri.vertices[0].position.y;
+    int y1 = (int)tri.vertices[1].position.y;
+    int y2 = (int)tri.vertices[2].position.y;
 
-    uint32_t color
-) {
-    // printf("normal a: %f %f %f\n", normal_a.x, normal_a.y, normal_a.z);
-    // printf("normal b: %f %f %f\n", normal_b.x, normal_b.y, normal_b.z);
-    // printf("normal c: %f %f %f\n", normal_c.x, normal_c.y, normal_c.z);
+    int x0 = (int)tri.vertices[0].position.x;
+    int x1 = (int)tri.vertices[1].position.x;
+    int x2 = (int)tri.vertices[2].position.x;
 
-    //////////////////////////////////////////////////////////
-    // Sort the vertices (y0 < y1 <y2) ///////////////////////
-    //////////////////////////////////////////////////////////
-
-    // Check first and second
+    // Sort vertices by Y (y0 < y1 < y2) using bubble sort passes
     if (y0 > y1) {
-        int_swap(&y0, &y1);
-        int_swap(&x0, &x1);
-
-        float_swap(&z0, &z1);
-        float_swap(&w0, &w1);
-
-        vec3_swap(&normal_a, &normal_b);
+        int_swap(&y0, &y1); int_swap(&x0, &x1);
+        vertex_swap(&tri.vertices[0], &tri.vertices[1]);
+        vec4_swap(&tri.cam_vertices[0], &tri.cam_vertices[1]);
     }
-
-    // Check second and third
     if (y1 > y2) {
-        int_swap(&y1, &y2);
-        int_swap(&x1, &x2);
-
-        float_swap(&z1, &z2);
-        float_swap(&w1, &w2);
-
-        vec3_swap(&normal_b, &normal_c);
+        int_swap(&y1, &y2); int_swap(&x1, &x2);
+        vertex_swap(&tri.vertices[1], &tri.vertices[2]);
+        vec4_swap(&tri.cam_vertices[1], &tri.cam_vertices[2]);
     }
-    // Check possible new first and new second
     if (y0 > y1) {
-        int_swap(&y0, &y1);
-        int_swap(&x0, &x1);
-
-        float_swap(&z0, &z1);
-        float_swap(&w0, &w1);
-
-        vec3_swap(&normal_a, &normal_b);
+        int_swap(&y0, &y1); int_swap(&x0, &x1);
+        vertex_swap(&tri.vertices[0], &tri.vertices[1]);
+        vec4_swap(&tri.cam_vertices[0], &tri.cam_vertices[1]);
     }
 
-    //////////////////////////////////////////////////////////
-    // Create vectors a, b, c ////////////////////////////////
-    //////////////////////////////////////////////////////////
-    vec4_t point_a = {x0, y0, z0, w0};
-    vec4_t point_b = {x1, y1, z1, w1};
-    vec4_t point_c = {x2, y2, z2, w2};
-
-    //////////////////////////////////////////////////////////
-    // Render the upper part of the triangle (flat-bottom) ///
-    //////////////////////////////////////////////////////////
-
+    // Slopes
     float inv_slope_1 = 0;
     float inv_slope_2 = 0;
 
-    if (y1 - y0 != 0) { inv_slope_1 = (float) (x1 - x0) / abs(y1 - y0); }
-    if (y2 - y0 != 0) { inv_slope_2 = (float) (x2 - x0) / abs(y2 - y0); }
+    // Flat-bottom (upper) half
+    if (y1 - y0 != 0) { inv_slope_1 = (float)(x1 - x0) / abs(y1 - y0); }
+    if (y2 - y0 != 0) { inv_slope_2 = (float)(x2 - x0) / abs(y2 - y0); }
 
     if (y1 - y0 != 0) {
         for (int y = y0; y <= y1; y++) {
-
             int x_start = x1 + ((y - y1) * inv_slope_1);
-            int x_end = x0 + ((y - y0) * inv_slope_2);
-
+            int x_end   = x0 + ((y - y0) * inv_slope_2);
             if (x_end < x_start) { int_swap(&x_start, &x_end); }
-
             for (int x = x_start; x < x_end; x++) {
-                draw_triangle_phong_pixel(
-                    x,
-                    y,
-                    point_a,
-                    point_b,
-                    point_c,
-                    normal_a,
-                    normal_b,
-                    normal_c,
-                    color
-                );
+                draw_triangle_phong_pixel(x, y, &tri, t->material);
             }
-
         }
     }
 
-    //////////////////////////////////////////////////////////
-    // Render the bottom part of the triangle (flat-top) /////
-    //////////////////////////////////////////////////////////
+    // Flat-top (lower) half
     inv_slope_1 = 0;
-    if (y2 - y1 != 0) { inv_slope_1 = (float) (x2 - x1) / abs(y2 - y1); }
+    if (y2 - y1 != 0) { inv_slope_1 = (float)(x2 - x1) / abs(y2 - y1); }
 
     if (y2 - y1 != 0) {
         for (int y = y1; y <= y2; y++) {
-
             int x_start = x1 + ((y - y1) * inv_slope_1);
-            int x_end = x0 + ((y - y0) * inv_slope_2);
-
+            int x_end   = x0 + ((y - y0) * inv_slope_2);
             if (x_end < x_start) { int_swap(&x_start, &x_end); }
-
             for (int x = x_start; x < x_end; x++) {
-                draw_triangle_phong_pixel(
-                    x,
-                    y,
-                    point_a,
-                    point_b,
-                    point_c,
-                    normal_a,
-                    normal_b,
-                    normal_c,
-                    color
-                );
+                draw_triangle_phong_pixel(x, y, &tri, t->material);
             }
-
         }
     }
-
 }
+
 
 
 void draw_textured_triangle (
@@ -427,76 +369,82 @@ void draw_triangle_pixel(
 /////////////////////////////////////////////////////////////////////////////
 // Function to draw  phong based pixel at position x and y ///////////////////
 /////////////////////////////////////////////////////////////////////////////
-void draw_triangle_phong_pixel(
-    int x,
-    int y,
-    vec4_t point_a,
-    vec4_t point_b,
-    vec4_t point_c,
-    vec3_t normal_a,
-    vec3_t normal_b,
-    vec3_t normal_c,
-    uint32_t color
-) {
-
-    // printf("normals: a(%f,%f,%f) b(%f,%f,%f) c(%f,%f,%f)\n",
-    //     normal_a.x, normal_a.y, normal_a.z,
-    //     normal_b.x, normal_b.y, normal_b.z,
-    //     normal_c.x, normal_c.y, normal_c.z);
-
-
-    // Get weights for P
-    vec2_t p = {x,y};
-
-    vec2_t a = vec2_from_vec4(point_a);
-    vec2_t b = vec2_from_vec4(point_b);
-    vec2_t c = vec2_from_vec4(point_c);
+void draw_triangle_phong_pixel(int x, int y, triangle_t* t, material_t material) {
+    vec2_t p = {x, y};
+    vec2_t a = vec2_from_vec4(t->vertices[0].position);
+    vec2_t b = vec2_from_vec4(t->vertices[1].position);
+    vec2_t c = vec2_from_vec4(t->vertices[2].position);
 
     vec3_t weights = barycenteric_weights(a, b, c, p);
-
     float alpha = weights.x;
-    float beta = weights.y;
+    float beta  = weights.y;
     float gamma = weights.z;
 
-    // Calculated the interpolated 1/w for the current pixel
-    float interpolated_reciprocal_w;
+    // Interpolated 1/w for depth test
+    float inv_w =
+        ((1.0f / t->vertices[0].position.w) * alpha) +
+        ((1.0f / t->vertices[1].position.w) * beta)  +
+        ((1.0f / t->vertices[2].position.w) * gamma);
 
-    // Find the reciprocal of the interpolated depth for the current pixel
-    interpolated_reciprocal_w = ((1 / point_a.w) * alpha) + ((1 / point_b.w) * beta) + ((1 / point_c.w) * gamma);
+    float depth = 1.0f - inv_w;
+    if (depth >= get_zbuffer_at(x, y)) return;
 
-    // Only draw the pixel if the depth value is less than the one
-    // previously stored in the z-buffer
-    interpolated_reciprocal_w = 1.0 - interpolated_reciprocal_w;
-    if (interpolated_reciprocal_w < get_zbuffer_at(x, y)){
-        // Interpolate the normals, find the light factor and
-        // modify the color accordingly
-        float interpolated_nx = (normal_a.x * alpha) + (normal_b.x * beta) + (normal_c.x * gamma);
-        float interpolated_ny = (normal_a.y * alpha) + (normal_b.y * beta) + (normal_c.y * gamma);
-        float interpolated_nz = (normal_a.z * alpha) + (normal_b.z * beta) + (normal_c.z * gamma);
+    // Interpolate normal
+    vec3_t n = vec3_new(
+        (t->vertices[0].normal.x * alpha) + (t->vertices[1].normal.x * beta) + (t->vertices[2].normal.x * gamma),
+        (t->vertices[0].normal.y * alpha) + (t->vertices[1].normal.y * beta) + (t->vertices[2].normal.y * gamma),
+        (t->vertices[0].normal.z * alpha) + (t->vertices[1].normal.z * beta) + (t->vertices[2].normal.z * gamma)
+    );
+    vec3_normalize(&n);
+    // Invert to match camera-space lighting convention
+    // n = vec3_new(-n.x, -n.y, -n.z);
 
-        vec3_t interpolated_n = vec3_new(-interpolated_nx, -interpolated_ny, -interpolated_nz);
-        vec3_normalize(&interpolated_n);
+    // Interpolate camera-space surface point
+    vec3_t surface_point = vec3_new(
+        (t->cam_vertices[0].x * alpha) + (t->cam_vertices[1].x * beta) + (t->cam_vertices[2].x * gamma),
+        (t->cam_vertices[0].y * alpha) + (t->cam_vertices[1].y * beta) + (t->cam_vertices[2].y * gamma),
+        (t->cam_vertices[0].z * alpha) + (t->cam_vertices[1].z * beta) + (t->cam_vertices[2].z * gamma)
+    );
 
-        float light_intensity_factor = light_alignment_factor(
-            interpolated_n,
-            get_light_direction()
-        );
+    // Light direction (directional — negate stored direction)
+    vec3_t light_dir = get_light_direction();
+    light_dir = vec3_new(-light_dir.x, -light_dir.y, -light_dir.z);
+    vec3_normalize(&light_dir);
 
-        // printf("interpolated normals: %f %f %f\n", interpolated_n.x, interpolated_n.y, interpolated_n.z);
-        // printf("light factor: %f\n", light_intensity_factor);
-        // printf("light direction: %f %f %f \n", get_light_direction().x, get_light_direction().y, get_light_direction().z);
+    // Camera direction (camera is at origin in camera space)
+    vec3_t cam_dir = vec3_sub(vec3_new(0, 0, 0), surface_point);
+    vec3_normalize(&cam_dir);
 
-        uint32_t phong_color = light_apply_intensity(
-            color,
-            light_intensity_factor
-        );
-
-        draw_pixel(x, y, phong_color);
-
-        // Update the z buffer value with 1/w of this current pixel
-        update_zbuffer_at(x, y, interpolated_reciprocal_w);
-
+    // Reflection vector: R = 2(N·L)N - L
+    float NdotL = vec3_dot(n, light_dir);
+    if (NdotL <= 0.0f) {
+        draw_pixel(x, y, multiply_colour(t->color, material.ka));
+        update_zbuffer_at(x, y, depth);
+        return;
     }
+    vec3_t reflection = vec3_sub(
+        vec3_mul(n, 2.0f * NdotL),
+        light_dir
+    );
+    vec3_normalize(&reflection);
+
+    // Phong components
+    float ambient_factor  = material.ka;
+    float diffuse_factor  = material.kd * MAX(NdotL, 0.0f);
+
+    float rv_dot = MAX(vec3_dot(reflection, cam_dir), 0.0f);
+    float rv_dot_clamped = MAX(rv_dot, 0.0f);
+    float pow_result = (float)pow((double)rv_dot_clamped, (double)material.shininess);
+    float specular_factor = material.ks * pow_result;
+
+    uint32_t ambient  = multiply_colour(t->color, ambient_factor);
+    uint32_t diffuse  = multiply_colour(t->color, diffuse_factor);
+    uint32_t specular = multiply_colour(0xFFFFFFFF, specular_factor);
+
+    uint32_t final_color = add_colors(add_colors(ambient, diffuse), specular);
+
+    draw_pixel(x, y, final_color);
+    update_zbuffer_at(x, y, depth);
 }
 
 /////////////////////////////////////////////////////////////////////////////
