@@ -25,7 +25,7 @@
 // Define max triangles per mesh
 #define MAX_TRIANGLES_PER_MESH 500000
 
-///////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////a///
 // Declare an array of vectors/points /////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////
 triangle_t triangles_to_render[MAX_TRIANGLES_PER_MESH];
@@ -151,6 +151,14 @@ void process_input(void) {
                     set_render_method(RENDER_FILL_TRIANGLE_PHONG_WIRE);
                     break;
                 }
+                if (event.key.keysym.sym == SDLK_9) {
+                    set_render_method(RENDER_DITHER);
+                    break;
+                }
+                if (event.key.keysym.sym == SDLK_0) {
+                    set_render_method(RENDER_DITHER_WIRE);
+                    break;
+                }
 
                 // Cull Method
                 if (event.key.keysym.sym == SDLK_c) {
@@ -261,8 +269,9 @@ static uint32_t calculate_triangle_color(vec3_t face_normal, uint32_t base_color
     {
         return base_color;
     }
-    vec3_t flipped = vec3_new(-face_normal.x, -face_normal.y, -face_normal.z);
-    float factor = light_alignment_factor(flipped, get_light_direction());
+    vec3_t light = get_light_direction();
+    vec3_normalize(&light);
+    float factor = light_alignment_factor(face_normal, light);
     return light_apply_intensity(base_color, factor);
 }
 
@@ -355,8 +364,10 @@ void process_graphics_pipeline(mesh_t* mesh) {
 
         // Transform normals (Phong only)
         vec3_t transformed_normals[3] = { {0,0,0}, {0,0,0}, {0,0,0} };
-        if (get_render_method() == RENDER_FILL_TRIANGLE_PHONG ||
-            get_render_method() == RENDER_FILL_TRIANGLE_PHONG_WIRE)
+        if (get_render_method() == RENDER_FILL_TRIANGLE_PHONG      ||
+            get_render_method() == RENDER_FILL_TRIANGLE_PHONG_WIRE ||
+            get_render_method() == RENDER_DITHER                   ||
+            get_render_method() == RENDER_DITHER_WIRE                )
         {
             transformed_normals[0] = mesh_face.a_normal;
             transformed_normals[1] = mesh_face.b_normal;
@@ -538,6 +549,10 @@ void render(void) {
 
                 triangle.texture
             );
+        }
+
+        if (should_render_dither_triangles()) {
+            draw_filled_triangle_dither(&triangle);
         }
 
         if (should_render_wireframe()) {

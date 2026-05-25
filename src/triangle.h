@@ -42,6 +42,7 @@ void draw_filled_triangle (
 );
 
 void draw_filled_triangle_phong(triangle_t* t);
+void draw_filled_triangle_dither(triangle_t* t);
 
 void draw_textured_triangle (
     int x0, int y0, float z0, float w0, float u0, float v0,
@@ -60,6 +61,7 @@ void draw_triangle_pixel(
 );
 
 void draw_triangle_phong_pixel(int x, int y, triangle_t* t, material_t material);
+void draw_triangle_dither_pixel(int x, int y, triangle_t* t);
 
 void draw_texel(
     int x,

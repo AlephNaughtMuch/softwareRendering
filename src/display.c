@@ -82,7 +82,8 @@ bool should_render_wireframe(void) {
         render_method == RENDER_WIRE_VERTEX                 ||
         render_method == RENDER_FILL_TRIANGLE_WIRE          ||
         render_method == RENDER_TEXTURED_WIRE               ||
-        render_method == RENDER_FILL_TRIANGLE_PHONG_WIRE
+        render_method == RENDER_FILL_TRIANGLE_PHONG_WIRE    ||
+        render_method == RENDER_DITHER_WIRE
     );
 }
 
@@ -96,6 +97,13 @@ bool should_render_phong_filled_triangles(void) {
     return (
         render_method == RENDER_FILL_TRIANGLE_PHONG ||
         render_method == RENDER_FILL_TRIANGLE_PHONG_WIRE
+    );
+}
+
+bool should_render_dither_triangles(void) {
+    return (
+        render_method == RENDER_DITHER ||
+        render_method == RENDER_DITHER_WIRE
     );
 }
 

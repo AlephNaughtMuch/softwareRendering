@@ -21,7 +21,9 @@ enum render_method {
     RENDER_FILL_TRIANGLE_PHONG,
     RENDER_FILL_TRIANGLE_PHONG_WIRE,
     RENDER_TEXTURED,
-    RENDER_TEXTURED_WIRE
+    RENDER_TEXTURED_WIRE,
+    RENDER_DITHER,
+    RENDER_DITHER_WIRE
 };
 
 int get_window_width(void);
@@ -37,6 +39,7 @@ bool should_render_wireframe(void);
 bool should_render_filled_triangles(void);
 bool should_render_wire_vertex(void);
 bool should_render_phong_filled_triangles(void);
+bool should_render_dither_triangles(void);
 
 void draw_pixel(int x, int y, uint32_t color);
 void draw_grid(void);

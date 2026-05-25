@@ -3,6 +3,7 @@
 #include "light.h"
 #include "material.h"
 #include "swap.h"
+#include "utils.h"
 #include "vector.h"
 #include <math.h>
 #include <stdint.h>
@@ -122,6 +123,73 @@ void draw_filled_triangle (
 
 
 }
+
+void draw_filled_triangle_dither(triangle_t* t) {
+    // Work on a local copy so we can sort without mutating the original
+    triangle_t tri = *t;
+
+    // Extract y values for sorting
+    int y0 = (int)tri.vertices[0].position.y;
+    int y1 = (int)tri.vertices[1].position.y;
+    int y2 = (int)tri.vertices[2].position.y;
+
+    int x0 = (int)tri.vertices[0].position.x;
+    int x1 = (int)tri.vertices[1].position.x;
+    int x2 = (int)tri.vertices[2].position.x;
+
+    // Sort vertices by Y (y0 < y1 < y2) using bubble sort passes
+    if (y0 > y1) {
+        int_swap(&y0, &y1); int_swap(&x0, &x1);
+        vertex_swap(&tri.vertices[0], &tri.vertices[1]);
+        vec4_swap(&tri.cam_vertices[0], &tri.cam_vertices[1]);
+    }
+    if (y1 > y2) {
+        int_swap(&y1, &y2); int_swap(&x1, &x2);
+        vertex_swap(&tri.vertices[1], &tri.vertices[2]);
+        vec4_swap(&tri.cam_vertices[1], &tri.cam_vertices[2]);
+    }
+    if (y0 > y1) {
+        int_swap(&y0, &y1); int_swap(&x0, &x1);
+        vertex_swap(&tri.vertices[0], &tri.vertices[1]);
+        vec4_swap(&tri.cam_vertices[0], &tri.cam_vertices[1]);
+    }
+
+    // Slopes
+    float inv_slope_1 = 0;
+    float inv_slope_2 = 0;
+
+    // Flat-bottom (upper) half
+    if (y1 - y0 != 0) { inv_slope_1 = (float)(x1 - x0) / abs(y1 - y0); }
+    if (y2 - y0 != 0) { inv_slope_2 = (float)(x2 - x0) / abs(y2 - y0); }
+
+    if (y1 - y0 != 0) {
+        for (int y = y0; y <= y1; y++) {
+            int x_start = x1 + ((y - y1) * inv_slope_1);
+            int x_end   = x0 + ((y - y0) * inv_slope_2);
+            if (x_end < x_start) { int_swap(&x_start, &x_end); }
+            for (int x = x_start; x < x_end; x++) {
+                draw_triangle_dither_pixel(x, y, &tri);
+            }
+        }
+    }
+
+    // Flat-top (lower) half
+    inv_slope_1 = 0;
+    if (y2 - y1 != 0) { inv_slope_1 = (float)(x2 - x1) / abs(y2 - y1); }
+
+    if (y2 - y1 != 0) {
+        for (int y = y1; y <= y2; y++) {
+            int x_start = x1 + ((y - y1) * inv_slope_1);
+            int x_end   = x0 + ((y - y0) * inv_slope_2);
+            if (x_end < x_start) { int_swap(&x_start, &x_end); }
+            for (int x = x_start; x < x_end; x++) {
+                draw_triangle_dither_pixel(x, y, &tri);
+            }
+        }
+    }
+}
+
+
 
 void draw_filled_triangle_phong(triangle_t* t) {
     // Work on a local copy so we can sort without mutating the original
@@ -365,9 +433,77 @@ void draw_triangle_pixel(
 
     }
 }
+/////////////////////////////////////////////////////////////////////////////
+// Function to draw  Bayer dithering based pixel at position x and y ////////
+/////////////////////////////////////////////////////////////////////////////
+void draw_triangle_dither_pixel(int x, int y, triangle_t* t) {
+    vec2_t p = {x, y};
+    vec2_t a = vec2_from_vec4(t->vertices[0].position);
+    vec2_t b = vec2_from_vec4(t->vertices[1].position);
+    vec2_t c = vec2_from_vec4(t->vertices[2].position);
+
+    vec3_t weights = barycenteric_weights(a, b, c, p);
+    float alpha = weights.x;
+    float beta  = weights.y;
+    float gamma = weights.z;
+
+    // Depth test
+    float inv_w =
+        ((1.0f / t->vertices[0].position.w) * alpha) +
+        ((1.0f / t->vertices[1].position.w) * beta)  +
+        ((1.0f / t->vertices[2].position.w) * gamma);
+    float depth = 1.0f - inv_w;
+    if (depth >= get_zbuffer_at(x, y)) return;
+
+    // Interpolate normal
+    vec3_t n = vec3_new(
+        (t->vertices[0].normal.x * alpha) + (t->vertices[1].normal.x * beta) + (t->vertices[2].normal.x * gamma),
+        (t->vertices[0].normal.y * alpha) + (t->vertices[1].normal.y * beta) + (t->vertices[2].normal.y * gamma),
+        (t->vertices[0].normal.z * alpha) + (t->vertices[1].normal.z * beta) + (t->vertices[2].normal.z * gamma)
+    );
+    vec3_normalize(&n);
+
+    // Light direction
+    vec3_t light_dir = get_light_direction();
+    light_dir = vec3_new(-light_dir.x, -light_dir.y, -light_dir.z);
+    vec3_normalize(&light_dir);
+    // Diffuse intensity
+    float intensity = MAX(vec3_dot(n, light_dir), 0.0f);
+    intensity = smoothstep(0.1f, 0.9f, intensity); // compress midtones
+
+
+    static const float bayer8x8[8][8] = {
+        {  0/64.0f, 32/64.0f,  8/64.0f, 40/64.0f,  2/64.0f, 34/64.0f, 10/64.0f, 42/64.0f },
+        { 48/64.0f, 16/64.0f, 56/64.0f, 24/64.0f, 50/64.0f, 18/64.0f, 58/64.0f, 26/64.0f },
+        { 12/64.0f, 44/64.0f,  4/64.0f, 36/64.0f, 14/64.0f, 46/64.0f,  6/64.0f, 38/64.0f },
+        { 60/64.0f, 28/64.0f, 52/64.0f, 20/64.0f, 62/64.0f, 30/64.0f, 54/64.0f, 22/64.0f },
+        {  3/64.0f, 35/64.0f, 11/64.0f, 43/64.0f,  1/64.0f, 33/64.0f,  9/64.0f, 41/64.0f },
+        { 51/64.0f, 19/64.0f, 59/64.0f, 27/64.0f, 49/64.0f, 17/64.0f, 57/64.0f, 25/64.0f },
+        { 15/64.0f, 47/64.0f,  7/64.0f, 39/64.0f, 13/64.0f, 45/64.0f,  5/64.0f, 37/64.0f },
+        { 63/64.0f, 31/64.0f, 55/64.0f, 23/64.0f, 61/64.0f, 29/64.0f, 53/64.0f, 21/64.0f }
+    };
+
+    float threshold = bayer8x8[(y) % 8][(x) % 8];
+    // Quantize intensity to N tones before dithering
+    int num_tones = 2;
+    float quantized = floor(intensity * num_tones) / num_tones;
+
+    // Then dither between quantized and next tone up
+    float next_tone = quantized + (1.0f / num_tones);
+    float dither_intensity = (intensity - quantized) * num_tones;
+
+    float final_intensity = (dither_intensity > threshold) ? next_tone : quantized;
+
+    uint32_t paper_color = 0xFF939944;
+    uint32_t ink_color   = 0xFF070707;
+    uint32_t final_color = (final_intensity > 0.5f) ? paper_color : ink_color;
+
+    draw_pixel(x, y, final_color);
+    update_zbuffer_at(x, y, depth);
+}
 
 /////////////////////////////////////////////////////////////////////////////
-// Function to draw  phong based pixel at position x and y ///////////////////
+// Function to draw  phong based pixel at position x and y //////////////////
 /////////////////////////////////////////////////////////////////////////////
 void draw_triangle_phong_pixel(int x, int y, triangle_t* t, material_t material) {
     vec2_t p = {x, y};
