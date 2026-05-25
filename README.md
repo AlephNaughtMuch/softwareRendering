@@ -11,10 +11,12 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 | Directional Light + Phong Shading | Phong Shading + Wireframe |
 |:-:|:-:|
 | ![Lighting](assets/demo_phong.gif)  |  ![Wireframe](assets/demo_phong_wireframe.gif) |
-| Directional Light (Flat Shading) | Wireframe |
-| ![Lighting](assets/demo_lighting.gif)  |  ![Wireframe](assets/demo_wireframe.gif) |
 | Textured | Textured + Wireframe |
 | ![Lighting](assets/demo_textured.gif)  |  ![Wireframe](assets/demo_textured_wireframe.gif) |
+| Dithered Pixels | Dithered Pixels Closeup |
+| ![Lighting](assets/demo_dithering.gif)  |  ![Wireframe](assets/demo_dithering_closeup.gif) |
+| Directional Light (Flat Shading) | Wireframe |
+| ![Lighting](assets/demo_lighting.gif)  |  ![Wireframe](assets/demo_wireframe.gif) |
 ## ✨ Current Features
 
 ### Core Pipeline
@@ -63,6 +65,8 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 - Textured + wireframe combined
 - Phong shading with specular highlights
 - Phong shading + wireframe combined
+- Ordered dithering (NPR - screen-space Bayer matrix, Obra Dinn-inspired)
+- Ordered dithering + wireframe combined
 
 ### Rasterization
 - Line drawing (screen-space)
@@ -86,6 +90,9 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 - Phong reflection model - ambient, diffuse, and specular components
 - Per-mesh material system (ka, kd, ks, shininess)
 - White specular highlights independent of object color
+- Ordered dithering - screen-space Bayer 8×8 matrix with quantized tone levels
+- Smoothstep contrast remapping for high-contrast dithered look
+- Fixed screen-space dither pattern - dots remain stationary as mesh moves beneath them
 - Face normal calculation refactored into the graphics pipeline for clarity and correctness
 
 ### Texture Mapping
@@ -122,6 +129,9 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 - PNG decoding and pixel format handling (RGBA32)
 - UV space to texel space mapping
 - Perspective-correct interpolation across triangle surfaces
+- Ordered dithering via Bayer matrix threshold comparison
+- Intensity quantization to discrete tone levels
+- Smoothstep remapping for contrast control
 
 ### Performance
 - World and view matrices combined into a single `world_view_matrix` - halves matrix multiplications per vertex
@@ -177,6 +187,8 @@ A prebuilt Linux binary is included in the repo if you want to run without compi
 | `6` | Textured + wireframe |
 | `7` | Phong shading |
 | `8` | Phong shading + wireframe |
+| `9` | Dithered NPR |
+| `0` | Dithered NPR + wireframe |
 | `C` | Enable backface culling |
 | `X` | Disable backface culling |
 | `W/S` | Move camera forward/back |
@@ -196,6 +208,8 @@ A prebuilt Linux binary is included in the repo if you want to run without compi
 │   ├── cube.png                       # Default texture
 │   ├── demo_phong.gif                 # README demo (Phong shading)
 │   ├── demo_phong_wireframe.gif       # README demo (Phong + wireframe)
+│   ├── demo_dithering.gif             # README demo (dithered NPR)
+│   ├── demo_dithering_closeup.gif     # README demo (dithered NPR closeup)
 │   ├── demo_lighting.gif              # README demo (flat shading)
 │   ├── demo_wireframe.gif             # README demo (wireframe)
 │   ├── demo_textured.gif              # README demo (textured)
@@ -231,10 +245,6 @@ These are intentional at this stage. The goal is to understand every part of the
 ---
 
 ## 🎯 Planned Next Steps
-
-### Rendering Features
-- Dithered NPR rendering mode
-- Mesh instancing
 
 ### Performance
 - SIMD optimisations
