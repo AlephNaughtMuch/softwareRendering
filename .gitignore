@@ -58,13 +58,11 @@ dkms.conf
 .vscode/
 
 # assets
-# assets/
 non_git_assets/
-# renderer
-# renderer
 
 # clang
 .clang-format
 .clang-tidy
 .editorconfig
 .gitattributes
+compile_commands.json

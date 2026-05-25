@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <SDL2/SDL.h>
+#include <stdio.h>
 
 #include "array.h"
 #include "clipping.h"
@@ -41,7 +42,6 @@ mat4_t proj_matrix;
 
 char* mesh_location = "assets/bunny.obj";
 char* texture_location = "assets/cube.png";
-
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Define the renderer's setup, input, update, render and garbage clearing ////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -51,7 +51,7 @@ void setup (void) {
     set_cull_method(CULL_BACKFACE);
 
     // Init the light
-    init_light(vec3_new(0,0,1));
+    init_light(vec3_new(1,-1,-1));
 
     // Init the camera
     init_camera(vec3_new(0,0,0), vec3_new(0,0,1));
@@ -77,17 +77,17 @@ void setup (void) {
         mesh_location,
         texture_location,
         vec3_new(1,1,1),
-        vec3_new(-3,0,8),
+        vec3_new(0,0,8),
         vec3_new(0,0,0)
     );
 
-    load_mesh(
-        mesh_location,
-        texture_location,
-        vec3_new(1,1,1),
-        vec3_new(3,0,8),
-        vec3_new(0,0,0)
-    );
+    // load_mesh(
+    //     mesh_location,
+    //     texture_location,
+    //     vec3_new(1,1,1),
+    //     vec3_new(3,0,8),
+    //     vec3_new(0,0,0)
+    // );
 
 }
 
@@ -127,6 +127,14 @@ void process_input(void) {
                 }
                 if (event.key.keysym.sym == SDLK_6) {
                     set_render_method(RENDER_TEXTURED_WIRE);
+                    break;
+                }
+                if (event.key.keysym.sym == SDLK_7) {
+                    set_render_method(RENDER_FILL_TRIANGLE_PHONG);
+                    break;
+                }
+                if (event.key.keysym.sym == SDLK_8) {
+                    set_render_method(RENDER_FILL_TRIANGLE_PHONG_WIRE);
                     break;
                 }
 
@@ -220,162 +228,213 @@ void process_input(void) {
 //                -> Screen Space <-- Ready to render
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Pipeline helpers ////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+static vec4_t project_vertex(vec4_t v, mat4_t proj_matrix, int width, int height) {
+    vec4_t p = mat4_mul_vec4_project(proj_matrix, v);
+    p.x *= (width  / 2.0);
+    p.y *= (height / 2.0);
+    p.y *= -1;
+    p.x += (width  / 2.0);
+    p.y += (height / 2.0);
+    return p;
+}
+
+static uint32_t calculate_triangle_color(vec3_t face_normal, uint32_t base_color) {
+    if (get_render_method() == RENDER_FILL_TRIANGLE_PHONG ||
+        get_render_method() == RENDER_FILL_TRIANGLE_PHONG_WIRE)
+    {
+        return base_color;
+    }
+    vec3_t flipped = vec3_new(-face_normal.x, -face_normal.y, -face_normal.z);
+    float factor = light_alignment_factor(flipped, get_light_direction());
+    return light_apply_intensity(base_color, factor);
+}
+
+static void push_triangle(
+    vec4_t p0, vec4_t p1, vec4_t p2,
+    vec3_t n0, vec3_t n1, vec3_t n2,
+    tex2_t uv0, tex2_t uv1, tex2_t uv2,
+    uint32_t color, upng_t* texture
+) {
+    if (num_triangles_to_render >= MAX_TRIANGLES_PER_MESH) return;
+    triangle_t* tr = &triangles_to_render[num_triangles_to_render++];
+    tr->vertices[0].position = p0;
+    tr->vertices[1].position = p1;
+    tr->vertices[2].position = p2;
+    tr->vertices[0].normal   = n0;
+    tr->vertices[1].normal   = n1;
+    tr->vertices[2].normal   = n2;
+    tr->texcoords[0]         = uv0;
+    tr->texcoords[1]         = uv1;
+    tr->texcoords[2]         = uv2;
+    tr->color                = color;
+    tr->texture              = texture;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Process the graphics pipeline stages for all the mesh triangles ////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
 void process_graphics_pipeline(mesh_t* mesh) {
+    mesh->rotation.y += 0.6 * delta_time;
+
     // Update camera look at target to create view matrix
     vec3_t target = get_camera_lookat_target();
     vec3_t up_direction = { 0, 1, 0 };
-
-    // Create the view matrix
     view_matrix = mat4_look_at(get_camera_position(), target, up_direction);
 
-    // Create a scale, rotation and translation matrices that will be used to multiply mesh vertices
-    mat4_t scale_matrix = mat4_make_scale(mesh->scale.x, mesh->scale.y, mesh->scale.z);
-    mat4_t translation_matrix = mat4_make_translation(
-                                                    mesh->translation.x,
-                                                    mesh->translation.y,
-                                                    mesh->translation.z
-                                                    );
-    mat4_t rotation_matrix_x = mat4_make_rotation_x(mesh->rotation.x);
-    mat4_t rotation_matrix_y = mat4_make_rotation_y(mesh->rotation.y);
-    mat4_t rotation_matrix_z = mat4_make_rotation_z(mesh->rotation.z);
+    // Build world and combined world-view matrices
+    mat4_t scale_matrix       = mat4_make_scale(mesh->scale.x, mesh->scale.y, mesh->scale.z);
+    mat4_t translation_matrix = mat4_make_translation(mesh->translation.x, mesh->translation.y, mesh->translation.z);
+    mat4_t rotation_matrix_x  = mat4_make_rotation_x(mesh->rotation.x);
+    mat4_t rotation_matrix_y  = mat4_make_rotation_y(mesh->rotation.y);
+    mat4_t rotation_matrix_z  = mat4_make_rotation_z(mesh->rotation.z);
 
     world_matrix = mat4_identity();
-    world_matrix = mat4_mul_mat4(scale_matrix, world_matrix);
-    world_matrix = mat4_mul_mat4(rotation_matrix_x, world_matrix);
-    world_matrix = mat4_mul_mat4(rotation_matrix_y, world_matrix);
-    world_matrix = mat4_mul_mat4(rotation_matrix_z, world_matrix);
+    world_matrix = mat4_mul_mat4(scale_matrix,       world_matrix);
+    world_matrix = mat4_mul_mat4(rotation_matrix_x,  world_matrix);
+    world_matrix = mat4_mul_mat4(rotation_matrix_y,  world_matrix);
+    world_matrix = mat4_mul_mat4(rotation_matrix_z,  world_matrix);
     world_matrix = mat4_mul_mat4(translation_matrix, world_matrix);
 
     mat4_t world_view_matrix = mat4_mul_mat4(view_matrix, world_matrix);
 
-    // Loop all triangle faces of our cube mesh
+    int width  = get_window_width();
+    int height = get_window_height();
+
+    // -------------------------------------------------------
+    // Mesh-level frustum check — runs once per mesh
+    // If the mesh origin is inside all frustum planes, skip
+    // per-face frustum checks entirely
+    // -------------------------------------------------------
+    bool mesh_needs_clipping = false;
+    plane_t* planes = get_frustum_planes();
+    vec4_t mesh_origin = mat4_mul_vec4(world_view_matrix, vec4_new(0, 0, 0, 1));
+
+    for (int p = 0; p < 6; p++) {
+        float dot = vec4_dot(
+            vec4_sub(mesh_origin, vec4_from_vec3(planes[p].point)),
+            vec4_from_vec3(planes[p].normal)
+        );
+        if (dot < 0) { mesh_needs_clipping = true; break; }
+    }
+
+    // Loop all triangle faces
     int face_count = array_length(mesh->faces);
     for (int i = 0; i < face_count; i++) {
         face_t mesh_face = mesh->faces[i];
 
-        vec3_t face_vertices[3];
-        face_vertices[0] = mesh->vertices[mesh_face.a];
-        face_vertices[1] = mesh->vertices[mesh_face.b];
-        face_vertices[2] = mesh->vertices[mesh_face.c];
-
-
+        // -------------------------------------------------------
+        // T0: Transform phase
+        // -------------------------------------------------------
         vec4_t transformed_vertices[3];
+        transformed_vertices[0] = mat4_mul_vec4(world_view_matrix, mesh->vertices[mesh_face.a].position);
+        transformed_vertices[1] = mat4_mul_vec4(world_view_matrix, mesh->vertices[mesh_face.b].position);
+        transformed_vertices[2] = mat4_mul_vec4(world_view_matrix, mesh->vertices[mesh_face.c].position);
 
-        // Loop all three vertices of this current face and apply transformations
-        for (int j = 0; j < 3; j++) {
-            vec4_t transformed_vertex = vec4_from_vec3(face_vertices[j]);
+        // Transform normals (Phong only)
+        vec3_t transformed_normals[3] = { {0,0,0}, {0,0,0}, {0,0,0} };
+        if (get_render_method() == RENDER_FILL_TRIANGLE_PHONG ||
+            get_render_method() == RENDER_FILL_TRIANGLE_PHONG_WIRE)
+        {
+            transformed_normals[0] = mesh_face.a_normal;
+            transformed_normals[1] = mesh_face.b_normal;
+            transformed_normals[2] = mesh_face.c_normal;
 
-            // Multiply the view matrix by the vector to transform the scene
-            // to camera space.
-            transformed_vertex = mat4_mul_vec4(world_view_matrix, transformed_vertex);
-
-            // Store the transformed vertex
-            transformed_vertices[j] = transformed_vertex;
+            for (int j = 0; j < 3; j++) {
+                vec4_t n = vec4_new(
+                    transformed_normals[j].x,
+                    transformed_normals[j].y,
+                    transformed_normals[j].z,
+                    0.0
+                );
+                n = mat4_mul_vec4(world_matrix, n);
+                transformed_normals[j] = vec3_from_vec4(n);
+            }
         }
 
-        // Calculate the triangle face normal
-        vec3_t face_normal = get_triangle_normal(transformed_vertices);
+        // vec3_t face_normal = get_triangle_normal(transformed_vertices);
+        vec4_t fn = vec4_new(mesh_face.a_normal.x, mesh_face.a_normal.y, mesh_face.a_normal.z, 0.0);
+        fn = mat4_mul_vec4(world_view_matrix, fn);
+        vec3_t face_normal = vec3_from_vec4(fn);
+        vec3_normalize(&face_normal);
 
 
-        ////////////////////////////////////////////////////////
-        // Backface Culling ///////////////////////////////////
-        ///////////////////////////////////////////////////////
+        // -------------------------------------------------------
+        // Backface culling
+        // -------------------------------------------------------
         if (is_cull_backface()) {
             vec3_t camera_ray = vec3_sub(vec3_new(0,0,0), vec3_from_vec4(transformed_vertices[0]));
-            vec3_normalize(&camera_ray);
-
-            float dot_normal_camera = vec3_dot(face_normal, camera_ray);
-
-            // If the face is a back-face, continue to the next face
-            if (dot_normal_camera < 0) { continue; }
+            // vec3_normalize(&camera_ray);
+            if (vec3_dot(face_normal, camera_ray) < 0) {
+                continue;
+            }
         }
 
+        // -------------------------------------------------------
+        // Per-face frustum check (skipped if mesh is fully inside)
+        // -------------------------------------------------------
+        bool needs_clipping = false;
+        if (mesh_needs_clipping) {
+            for (int p = 0; p < 6 && !needs_clipping; p++) {
+                for (int j = 0; j < 3; j++) {
+                    float dot = vec4_dot(
+                        vec4_sub(transformed_vertices[j], vec4_from_vec3(planes[p].point)),
+                        vec4_from_vec3(planes[p].normal)
+                    );
+                    if (dot < 0) { needs_clipping = true; break; }
+                }
+            }
+        }
 
-        // Create a polygon from the original transform vertices
-        polygon_t polygon = create_polygon_from_triangle(
-            vec3_from_vec4(transformed_vertices[0]),
-            vec3_from_vec4(transformed_vertices[1]),
-            vec3_from_vec4(transformed_vertices[2]),
+        uint32_t triangle_color = calculate_triangle_color(face_normal, mesh_face.color);
 
-            mesh_face.a_uv,
-            mesh_face.b_uv,
-            mesh_face.c_uv
-        );
+        // -------------------------------------------------------
+        // Clipping path
+        // -------------------------------------------------------
+        if (needs_clipping) {
+            polygon_t polygon = create_polygon_from_triangle(
+                transformed_vertices[0], transformed_vertices[1], transformed_vertices[2],
+                transformed_normals[0],  transformed_normals[1],  transformed_normals[2],
+                mesh_face.a_uv, mesh_face.b_uv, mesh_face.c_uv
+            );
 
-        // Clip the polygon and returns a new polygon with potential new vertices
-        clip_polygon(&polygon);
+            clip_polygon(&polygon);
 
-        //  After clipping, we need to break the polygon into triangles again
-        triangle_t triangles_after_clipping[MAX_NUM_POLY_TRIANGLES];
-        int num_triangles_after_clipping = 0;
+            triangle_t triangles_after_clipping[MAX_NUM_POLY_TRIANGLES];
+            int num_triangles_after_clipping = 0;
+            triangles_from_polygon(&polygon, triangles_after_clipping, &num_triangles_after_clipping);
 
-        triangles_from_polygon(
-            &polygon,
-            triangles_after_clipping,
-            &num_triangles_after_clipping
-        );
-
-        // Loop all the assembled triangles after clipping
-        for (int t = 0; t < num_triangles_after_clipping; t++) {
-            triangle_t triangle_after_clipping = triangles_after_clipping[t];
-
-            // Projection
-            vec4_t projected_points[3];
-
-            for (int j = 0; j < 3; j ++) {
-                projected_points[j] = mat4_mul_vec4_project(
-                    proj_matrix,
-                    triangle_after_clipping.points[j]
+            for (int t = 0; t < num_triangles_after_clipping; t++) {
+                triangle_t* tc = &triangles_after_clipping[t];
+                push_triangle(
+                    project_vertex(tc->vertices[0].position, proj_matrix, width, height),
+                    project_vertex(tc->vertices[1].position, proj_matrix, width, height),
+                    project_vertex(tc->vertices[2].position, proj_matrix, width, height),
+                    tc->vertices[0].normal, tc->vertices[1].normal, tc->vertices[2].normal,
+                    tc->texcoords[0], tc->texcoords[1], tc->texcoords[2],
+                    triangle_color, mesh->texture
                 );
-
-                // Scale the points to the viewport
-                projected_points[j].x *= (get_window_width() / 2.0);
-                projected_points[j].y *= (get_window_height() / 2.0);
-
-                // Invert y values to account for flipped screen y coordinate
-                projected_points[j].y *= -1;
-
-                // Translate the projected points to the middle of the screen
-                projected_points[j].x += (get_window_width() / 2.0);
-                projected_points[j].y += (get_window_height() / 2.0);
-
-
             }
-
-            // Calculate color and lighting
-            float light_intensity_factor = light_alignment_factor(
-                face_normal,
-                get_light_direction()
+        } else {
+            // -------------------------------------------------------
+            // Fast path — fully inside frustum, project directly
+            // -------------------------------------------------------
+            push_triangle(
+                project_vertex(transformed_vertices[0], proj_matrix, width, height),
+                project_vertex(transformed_vertices[1], proj_matrix, width, height),
+                project_vertex(transformed_vertices[2], proj_matrix, width, height),
+                transformed_normals[0], transformed_normals[1], transformed_normals[2],
+                mesh_face.a_uv, mesh_face.b_uv, mesh_face.c_uv,
+                triangle_color, mesh->texture
             );
-            uint32_t triangle_color = light_apply_intensity(
-                mesh_face.color,
-                light_intensity_factor
-            );
-
-            triangle_t triangle_to_render= {
-                .points = {
-                    { projected_points[0].x, projected_points[0].y, projected_points[0].z, projected_points[0].w },
-                    { projected_points[1].x, projected_points[1].y, projected_points[1].z, projected_points[1].w },
-                    { projected_points[2].x, projected_points[2].y, projected_points[2].z, projected_points[2].w }
-                },
-                .texcoords = {
-                    { triangle_after_clipping.texcoords[0].u, triangle_after_clipping.texcoords[0].v },
-                    { triangle_after_clipping.texcoords[1].u, triangle_after_clipping.texcoords[1].v },
-                    { triangle_after_clipping.texcoords[2].u, triangle_after_clipping.texcoords[2].v },
-                },
-                .color = triangle_color,
-                .texture = mesh->texture,
-            };
-
-            // Save the projected triangles in the array of triangles
-            if (num_triangles_to_render < MAX_TRIANGLES_PER_MESH) {
-                triangles_to_render[num_triangles_to_render] = triangle_to_render;
-                num_triangles_to_render++;
-            }
         }
+
     }
 
 }
+
 
 void update(void) {
     int time_to_wait = FRAME_TARGET_TIME - (SDL_GetTicks() - previous_frame_time);
@@ -415,23 +474,49 @@ void render(void) {
     // Loop all projected triangles and render them
     for (int i = 0; i < num_triangles_to_render; i++) {
         triangle_t triangle = triangles_to_render[i];
+        // printf("triangle normal: %f %f %f\n", triangle.vertices->normal.x,  triangle.vertices->normal.y,  triangle.vertices->normal.z);
 
         if (should_render_filled_triangles()) {
             draw_filled_triangle(
-                triangle.points[0].x,
-                triangle.points[0].y,
-                triangle.points[0].z,
-                triangle.points[0].w,
+                triangle.vertices[0].position.x,
+                triangle.vertices[0].position.y,
+                triangle.vertices[0].position.z,
+                triangle.vertices[0].position.w,
 
-                triangle.points[1].x,
-                triangle.points[1].y,
-                triangle.points[1].z,
-                triangle.points[1].w,
+                triangle.vertices[1].position.x,
+                triangle.vertices[1].position.y,
+                triangle.vertices[1].position.z,
+                triangle.vertices[1].position.w,
 
-                triangle.points[2].x,
-                triangle.points[2].y,
-                triangle.points[2].z,
-                triangle.points[2].w,
+                triangle.vertices[2].position.x,
+                triangle.vertices[2].position.y,
+                triangle.vertices[2].position.z,
+                triangle.vertices[2].position.w,
+
+                triangle.color
+            );
+        }
+
+        if (should_render_phong_filled_triangles()) {
+            draw_filled_triangle_phong(
+                triangle.vertices[0].position.x,
+                triangle.vertices[0].position.y,
+                triangle.vertices[0].position.z,
+                triangle.vertices[0].position.w,
+
+                triangle.vertices[1].position.x,
+                triangle.vertices[1].position.y,
+                triangle.vertices[1].position.z,
+                triangle.vertices[1].position.w,
+
+                triangle.vertices[2].position.x,
+                triangle.vertices[2].position.y,
+                triangle.vertices[2].position.z,
+                triangle.vertices[2].position.w,
+
+                triangle.vertices[0].normal,
+                triangle.vertices[1].normal,
+                triangle.vertices[2].normal,
 
                 triangle.color
             );
@@ -439,24 +524,24 @@ void render(void) {
 
         if (should_render_textured_triangles()) {
             draw_textured_triangle(
-                triangle.points[0].x,
-                triangle.points[0].y,
-                triangle.points[0].z,
-                triangle.points[0].w,
+                triangle.vertices[0].position.x,
+                triangle.vertices[0].position.y,
+                triangle.vertices[0].position.z,
+                triangle.vertices[0].position.w,
                 triangle.texcoords[0].u,
                 triangle.texcoords[0].v,
 
-                triangle.points[1].x,
-                triangle.points[1].y,
-                triangle.points[1].z,
-                triangle.points[1].w,
+                triangle.vertices[1].position.x,
+                triangle.vertices[1].position.y,
+                triangle.vertices[1].position.z,
+                triangle.vertices[1].position.w,
                 triangle.texcoords[1].u,
                 triangle.texcoords[1].v,
 
-                triangle.points[2].x,
-                triangle.points[2].y,
-                triangle.points[2].z,
-                triangle.points[2].w,
+                triangle.vertices[2].position.x,
+                triangle.vertices[2].position.y,
+                triangle.vertices[2].position.z,
+                triangle.vertices[2].position.w,
                 triangle.texcoords[2].u,
                 triangle.texcoords[2].v,
 
@@ -466,24 +551,35 @@ void render(void) {
 
         if (should_render_wireframe()) {
             draw_triangle(
-                triangle.points[0].x,
-                triangle.points[0].y,
-                triangle.points[1].x,
-                triangle.points[1].y,
-                triangle.points[2].x,
-                triangle.points[2].y,
+                triangle.vertices[0].position.x,
+                triangle.vertices[0].position.y,
+                triangle.vertices[1].position.x,
+                triangle.vertices[1].position.y,
+                triangle.vertices[2].position.x,
+                triangle.vertices[2].position.y,
                 0xFFFFFFFF
             );
         }
 
         if (should_render_wire_vertex()) {
-            draw_rect(triangle.points[0].x - 3, triangle.points[0].y - 3, 6, 6, 0xFFFF0000);
-            draw_rect(triangle.points[1].x - 3, triangle.points[1].y - 3, 6, 6, 0xFFFF0000);
-            draw_rect(triangle.points[2].x - 3, triangle.points[2].y - 3, 6, 6, 0xFFFF0000);
+            draw_rect(triangle.vertices[0].position.x - 3, triangle.vertices[0].position.y - 3, 6, 6, 0xFFFF0000);
+            draw_rect(triangle.vertices[1].position.x - 3, triangle.vertices[1].position.y - 3, 6, 6, 0xFFFF0000);
+            draw_rect(triangle.vertices[2].position.x - 3, triangle.vertices[2].position.y - 3, 6, 6, 0xFFFF0000);
         }
     }
 
     render_color_buffer();
+    static int frame_count = 0;
+    static uint32_t fps_timer = 0;
+
+    frame_count++;
+    uint32_t current_time = SDL_GetTicks();
+
+    if (current_time - fps_timer >= 1000) {
+        printf("FPS: %d ", frame_count);
+        frame_count = 0;
+        fps_timer = current_time;
+    }
 }
 
 void free_resources(void) {

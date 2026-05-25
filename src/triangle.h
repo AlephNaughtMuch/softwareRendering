@@ -5,6 +5,7 @@
 #include "vector.h"
 #include "texture.h"
 #include "upng.h"
+#include "vertex.h"
 
 typedef struct
 {
@@ -14,12 +15,15 @@ typedef struct
     tex2_t a_uv;
     tex2_t b_uv;
     tex2_t c_uv;
+    vec3_t a_normal;
+    vec3_t b_normal;
+    vec3_t c_normal;
     uint32_t color;
 } face_t;
 
 typedef struct
 {
-    vec4_t points[3];
+    vertex_t vertices[3];
     tex2_t texcoords[3];
     uint32_t color;
     upng_t* texture;
@@ -31,6 +35,18 @@ void draw_filled_triangle (
     int x0, int y0, float z0, float w0,
     int x1, int y1, float z1, float w1,
     int x2, int y2, float z2, float w2,
+    uint32_t color
+);
+
+void draw_filled_triangle_phong (
+    int x0, int y0, float z0, float w0,
+    int x1, int y1, float z1, float w1,
+    int x2, int y2, float z2, float w2,
+
+    vec3_t normal_a,
+    vec3_t normal_b,
+    vec3_t normal_c,
+
     uint32_t color
 );
 
@@ -47,6 +63,18 @@ void draw_triangle_pixel(
     vec4_t point_a,
     vec4_t point_b,
     vec4_t point_c,
+    uint32_t color
+);
+
+void draw_triangle_phong_pixel(
+    int x,
+    int y,
+    vec4_t point_a,
+    vec4_t point_b,
+    vec4_t point_c,
+    vec3_t normal_a,
+    vec3_t normal_b,
+    vec3_t normal_c,
     uint32_t color
 );
 

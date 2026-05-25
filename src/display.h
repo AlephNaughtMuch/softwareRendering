@@ -18,12 +18,15 @@ enum render_method {
     RENDER_WIRE_VERTEX,
     RENDER_FILL_TRIANGLE,
     RENDER_FILL_TRIANGLE_WIRE,
+    RENDER_FILL_TRIANGLE_PHONG,
+    RENDER_FILL_TRIANGLE_PHONG_WIRE,
     RENDER_TEXTURED,
     RENDER_TEXTURED_WIRE
 };
 
 int get_window_width(void);
 int get_window_height(void);
+int get_render_method(void);
 
 void set_render_method(int method);
 void set_cull_method(int method);
@@ -33,6 +36,7 @@ bool should_render_textured_triangles(void);
 bool should_render_wireframe(void);
 bool should_render_filled_triangles(void);
 bool should_render_wire_vertex(void);
+bool should_render_phong_filled_triangles(void);
 
 void draw_pixel(int x, int y, uint32_t color);
 void draw_grid(void);
@@ -49,4 +53,4 @@ void destroy_window(void);
 float get_zbuffer_at(int x, int y);
 void update_zbuffer_at(int x, int y, float value);
 
-#endif 
+#endif

@@ -156,6 +156,30 @@ vec3_t vec3_clone(vec3_t* v) {
     return result;
 }
 
+// Implementations for 4D vector functions
+vec4_t vec4_sub(vec4_t a, vec4_t b) {
+    vec4_t result = {
+        .x = a.x - b.x,
+        .y = a.y - b.y,
+        .z = a.z - b.z,
+        .w = a.w - b.w,
+    };
+    return result;
+}
+
+float vec4_dot(vec4_t a, vec4_t b) {
+    return (a.x * b.x) + (a.y * b.y) + (a.z * b.z) + (a.w * b.w);
+}
+
+vec4_t vec4_clone(vec4_t* v) {
+    vec4_t result = {v->x, v->y, v-> z, v-> w};
+    return result;
+}
+
+vec4_t vec4_new(float x, float y, float z, float w) {
+    vec4_t result = {.x = x, .y = y, .z = z, .w = w};
+    return result;
+}
 // Implementations for vector conversion functions
 vec4_t vec4_from_vec3(vec3_t v) {
     vec4_t result = { v.x, v.y, v.z, 1.0 };

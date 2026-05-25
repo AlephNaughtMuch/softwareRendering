@@ -35,6 +35,10 @@ void set_render_method(int method) {
     render_method = method;
 }
 
+int get_render_method(void) {
+    return render_method;
+}
+
 void set_cull_method(int method) {
     cull_method = method;
 }
@@ -74,16 +78,24 @@ bool should_render_textured_triangles(void) {
 
 bool should_render_wireframe(void) {
     return (
-        render_method == RENDER_WIRE               ||
-        render_method == RENDER_WIRE_VERTEX        ||
-        render_method == RENDER_FILL_TRIANGLE_WIRE ||
-        render_method == RENDER_TEXTURED_WIRE
+        render_method == RENDER_WIRE                        ||
+        render_method == RENDER_WIRE_VERTEX                 ||
+        render_method == RENDER_FILL_TRIANGLE_WIRE          ||
+        render_method == RENDER_TEXTURED_WIRE               ||
+        render_method == RENDER_FILL_TRIANGLE_PHONG_WIRE
     );
 }
 
 bool should_render_wire_vertex(void) {
     return (
         render_method == RENDER_WIRE_VERTEX
+    );
+}
+
+bool should_render_phong_filled_triangles(void) {
+    return (
+        render_method == RENDER_FILL_TRIANGLE_PHONG ||
+        render_method == RENDER_FILL_TRIANGLE_PHONG_WIRE
     );
 }
 

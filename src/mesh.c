@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "array.h"
+#include "vector.h"
+#include "vertex.h"
 #include "mesh.h"
 
 #define MAX_LINE 1024
@@ -21,23 +23,27 @@ void load_mesh(char* obj_filename, char* png_filename, vec3_t scale, vec3_t tran
     mesh_count++;
 }
 
-
 void load_mesh_obj_data(mesh_t* mesh, char* obj_filename) {
     FILE* model_file = fopen(obj_filename, "r");
     if (!model_file) { perror("fopen"); return; }
 
     char line[MAX_LINE];
 
+    vec3_t* normals = NULL;
     tex2_t* texcoords = NULL;
 
     while(fgets(line, sizeof(line), model_file)) {
 
         // Vertex info
         if (strncmp(line, "v ", 2) == 0) {
-            vec3_t vertex;
-            sscanf(line, "v %f %f %f", &vertex.x, &vertex.y, &vertex.z);
-            array_push(mesh->vertices, vertex);
-
+            vec3_t position;
+            sscanf(line, "v %f %f %f", &position.x, &position.y, &position.z);
+            vertex_t v = { .position = vec4_from_vec3(position) };
+            array_push(mesh->vertices, v);
+        } else if (strncmp(line, "vn ", 3) == 0) {
+            vec3_t normal;
+            sscanf(line, "vn %f %f %f", &normal.x, &normal.y, &normal.z);
+            array_push(normals, normal);
         }
 
         // UV Information
@@ -65,21 +71,23 @@ void load_mesh_obj_data(mesh_t* mesh, char* obj_filename) {
                 .a = vertex_indices[0] - 1,
                 .b = vertex_indices[1] - 1,
                 .c = vertex_indices[2] - 1,
-                .a_uv = texcoords[texture_indices[0] - 1],
-                .b_uv = texcoords[texture_indices[1] - 1],
-                .c_uv = texcoords[texture_indices[2] - 1],
-                .color = 0xFFFFFFFF
+                .a_uv     = texcoords[texture_indices[0] - 1],
+                .b_uv     = texcoords[texture_indices[1] - 1],
+                .c_uv     = texcoords[texture_indices[2] - 1],
+                .a_normal = normals[normal_indices[0] - 1],
+                .b_normal = normals[normal_indices[1] - 1],
+                .c_normal = normals[normal_indices[2] - 1],
+                .color    = 0xFFFFFFFF
             };
 
             array_push(mesh->faces, face);
         }
     }
 
+    array_free(normals);
     array_free(texcoords);
     fclose(model_file);
 }
-
-
 void load_mesh_png_data(mesh_t* mesh, char* png_filename) {
     upng_t* png_image = upng_new_from_file(png_filename);
 
