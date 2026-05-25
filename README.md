@@ -1,7 +1,7 @@
 # Software Renderer (SDL + C)
 
 A **CPU-based software renderer written in C**, using **SDL2 only for windowing and display output**.  
-The project focuses on building a complete rasterization pipeline from the ground up — covering projection math, triangle rasterization, depth buffering, lighting, texture mapping, and performance optimization — before moving to GPU rendering.
+The project focuses on building a complete rasterization pipeline from the ground up - covering projection math, triangle rasterization, depth buffering, lighting, texture mapping, and performance optimization, before moving to GPU rendering.
 
 This is part of an ongoing exploration into **rendering engineering / graphics programming**, coming from a VFX/film technical background.
 
@@ -26,8 +26,8 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 
 ### Geometry & Mesh
 - Mesh and triangle data types with dynamic arrays for complex geometry
-- OBJ file loader — reads arbitrary meshes from disk
-- Multi-mesh scene support — load and render multiple meshes with independent transforms and textures
+- OBJ file loader - reads arbitrary meshes from disk
+- Multi-mesh scene support - load and render multiple meshes with independent transforms and textures
 - Per-mesh scale, translation, and rotation properties
 - Stanford Bunny included as default test mesh (~70k triangles)
 - Per-face and per-triangle color support
@@ -81,9 +81,9 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 
 ### Lighting
 - Directional light source
-- Flat shading — per-face light intensity based on surface normal alignment
-- Phong shading — per-pixel lighting with smooth normal interpolation
-- Phong reflection model — ambient, diffuse, and specular components
+- Flat shading - per-face light intensity based on surface normal alignment
+- Phong shading - per-pixel lighting with smooth normal interpolation
+- Phong reflection model - ambient, diffuse, and specular components
 - Per-mesh material system (ka, kd, ks, shininess)
 - White specular highlights independent of object color
 - Face normal calculation refactored into the graphics pipeline for clarity and correctness
@@ -124,12 +124,12 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 - Perspective-correct interpolation across triangle surfaces
 
 ### Performance
-- World and view matrices combined into a single `world_view_matrix` — halves matrix multiplications per vertex
+- World and view matrices combined into a single `world_view_matrix` - halves matrix multiplications per vertex
 - Face count cached before the render loop to avoid repeated `array_length` calls
 - Static triangle buffer (no dynamic allocation per frame)
 - Compiler optimisation via `-O2` flag in Makefile
-- Mesh-level frustum check — skips per-face clipping entirely when mesh is fully inside the frustum
-- Fast path for non-clipped triangles — projects directly without polygon conversion overhead
+- Mesh-level frustum check - skips per-face clipping entirely when mesh is fully inside the frustum
+- Fast path for non-clipped triangles - projects directly without polygon conversion overhead
 - Tight raster loops to minimise unnecessary iteration
 - Frame timing and event loop responsiveness
 
@@ -224,7 +224,7 @@ A prebuilt Linux binary is included in the repo if you want to run without compi
 ## 🛠 Known Limitations
 
 - No mesh instancing
-- CPU only — no GPU acceleration
+- CPU only - no GPU acceleration
 
 These are intentional at this stage. The goal is to understand every part of the pipeline before moving to a GPU-based implementation.
 
@@ -264,4 +264,4 @@ Understanding the CPU renderer demystifies GPU pipelines and shader math from fi
 - Pikuma graphics programming courses
 - Classic software renderer tutorials
 - Real-time rendering literature
-- [upng](https://github.com/elanthis/upng/) — minimal PNG decoding library by elanthis
+- [upng](https://github.com/elanthis/upng/) - minimal PNG decoding library by elanthis
