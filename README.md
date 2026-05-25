@@ -8,8 +8,10 @@ This is part of an ongoing exploration into **rendering engineering / graphics p
 
 ## Demos
 
-| Directional Light (Flat Shading) | Wireframe |
+| Directional Light + Phong Shading | Phong Shading + Wireframe |
 |:-:|:-:|
+| ![Lighting](assets/demo_phong.gif)  |  ![Wireframe](assets/demo_phong_wireframe.gif) |
+| Directional Light (Flat Shading) | Wireframe |
 | ![Lighting](assets/demo_lighting.gif)  |  ![Wireframe](assets/demo_wireframe.gif) |
 | Textured | Textured + Wireframe |
 | ![Lighting](assets/demo_textured.gif)  |  ![Wireframe](assets/demo_textured_wireframe.gif) |
