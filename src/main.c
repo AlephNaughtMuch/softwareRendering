@@ -500,24 +500,7 @@ void render(void) {
         triangle_t triangle = triangles_to_render[i];
 
         if (should_render_filled_triangles()) {
-            draw_filled_triangle(
-                triangle.vertices[0].position.x,
-                triangle.vertices[0].position.y,
-                triangle.vertices[0].position.z,
-                triangle.vertices[0].position.w,
-
-                triangle.vertices[1].position.x,
-                triangle.vertices[1].position.y,
-                triangle.vertices[1].position.z,
-                triangle.vertices[1].position.w,
-
-                triangle.vertices[2].position.x,
-                triangle.vertices[2].position.y,
-                triangle.vertices[2].position.z,
-                triangle.vertices[2].position.w,
-
-                triangle.color
-            );
+            draw_filled_triangle(&triangle);
         }
 
         if (should_render_phong_filled_triangles()) {
@@ -525,30 +508,7 @@ void render(void) {
         }
 
         if (should_render_textured_triangles()) {
-            draw_textured_triangle(
-                triangle.vertices[0].position.x,
-                triangle.vertices[0].position.y,
-                triangle.vertices[0].position.z,
-                triangle.vertices[0].position.w,
-                triangle.texcoords[0].u,
-                triangle.texcoords[0].v,
-
-                triangle.vertices[1].position.x,
-                triangle.vertices[1].position.y,
-                triangle.vertices[1].position.z,
-                triangle.vertices[1].position.w,
-                triangle.texcoords[1].u,
-                triangle.texcoords[1].v,
-
-                triangle.vertices[2].position.x,
-                triangle.vertices[2].position.y,
-                triangle.vertices[2].position.z,
-                triangle.vertices[2].position.w,
-                triangle.texcoords[2].u,
-                triangle.texcoords[2].v,
-
-                triangle.texture
-            );
+            draw_textured_triangle(&triangle);
         }
 
         if (should_render_dither_triangles()) {
@@ -568,9 +528,24 @@ void render(void) {
         }
 
         if (should_render_wire_vertex()) {
-            draw_rect(triangle.vertices[0].position.x - 3, triangle.vertices[0].position.y - 3, 6, 6, 0xFFFF0000);
-            draw_rect(triangle.vertices[1].position.x - 3, triangle.vertices[1].position.y - 3, 6, 6, 0xFFFF0000);
-            draw_rect(triangle.vertices[2].position.x - 3, triangle.vertices[2].position.y - 3, 6, 6, 0xFFFF0000);
+            draw_rect(
+                triangle.vertices[0].position.x - 3,
+                triangle.vertices[0].position.y - 3,
+                6,
+                6,
+                0xFFFF0000);
+            draw_rect(
+                triangle.vertices[1].position.x - 3,
+                triangle.vertices[1].position.y - 3,
+                6,
+                6,
+                0xFFFF0000);
+            draw_rect(
+                triangle.vertices[2].position.x - 3,
+                 triangle.vertices[2].position.y - 3,
+                 6,
+                 6,
+                 0xFFFF0000);
         }
     }
 

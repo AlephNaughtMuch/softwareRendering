@@ -3,6 +3,8 @@
 #include "light.h"
 #include "material.h"
 #include "swap.h"
+#include "texture.h"
+#include "upng.h"
 #include "utils.h"
 #include "vector.h"
 #include <math.h>
@@ -28,43 +30,48 @@ vec3_t get_triangle_normal(vec4_t vertices[3]) {
     return normal;
 }
 
-void draw_filled_triangle (
-    int x0, int y0, float z0, float w0,
-    int x1, int y1, float z1, float w1,
-    int x2, int y2, float z2, float w2,
-    uint32_t color
-) {
+void draw_filled_triangle (triangle_t* t) {
+    // Work on a local copy so we can sort without mutating the original
+    triangle_t tri = *t;
+    uint32_t color = tri.color;
+
+    // Extract y values for sorting
+    int y0 = (int)tri.vertices[0].position.y;
+    int y1 = (int)tri.vertices[1].position.y;
+    int y2 = (int)tri.vertices[2].position.y;
+
+    int x0 = (int)tri.vertices[0].position.x;
+    int x1 = (int)tri.vertices[1].position.x;
+    int x2 = (int)tri.vertices[2].position.x;
+
+    float z0 = tri.vertices[0].position.z;
+    float z1 = tri.vertices[1].position.z;
+    float z2 = tri.vertices[2].position.z;
+
+    float w0 = tri.vertices[0].position.z;
+    float w1 = tri.vertices[1].position.z;
+    float w2 = tri.vertices[2].position.z;
 
     //////////////////////////////////////////////////////////
     // Sort the vertices (y0 < y1 <y2) ///////////////////////
     //////////////////////////////////////////////////////////
-
-    // Check first and second
     if (y0 > y1) {
-        int_swap(&y0, &y1);
-        int_swap(&x0, &x1);
-
-        float_swap(&z0, &z1);
-        float_swap(&w0, &w1);
-
+        int_swap(&y0, &y1); int_swap(&x0, &x1);
+        float_swap(&z0, &z1); float_swap(&w0, &w1);
+        vertex_swap(&tri.vertices[0], &tri.vertices[1]);
+        vec4_swap(&tri.cam_vertices[0], &tri.cam_vertices[1]);
     }
-    // Check second and third
     if (y1 > y2) {
-        int_swap(&y1, &y2);
-        int_swap(&x1, &x2);
-
-        float_swap(&z1, &z2);
-        float_swap(&w1, &w2);
-
+        int_swap(&y1, &y2); int_swap(&x1, &x2);
+        float_swap(&z1, &z2); float_swap(&w1, &w2);
+        vertex_swap(&tri.vertices[1], &tri.vertices[2]);
+        vec4_swap(&tri.cam_vertices[1], &tri.cam_vertices[2]);
     }
-    // Check possible new first and new second
     if (y0 > y1) {
-        int_swap(&y0, &y1);
-        int_swap(&x0, &x1);
-
-        float_swap(&z0, &z1);
-        float_swap(&w0, &w1);
-
+        int_swap(&y0, &y1); int_swap(&x0, &x1);
+        float_swap(&z0, &z1); float_swap(&w0, &w1);
+        vertex_swap(&tri.vertices[0], &tri.vertices[1]);
+        vec4_swap(&tri.cam_vertices[0], &tri.cam_vertices[1]);
     }
 
     //////////////////////////////////////////////////////////
@@ -189,8 +196,6 @@ void draw_filled_triangle_dither(triangle_t* t) {
     }
 }
 
-
-
 void draw_filled_triangle_phong(triangle_t* t) {
     // Work on a local copy so we can sort without mutating the original
     triangle_t tri = *t;
@@ -256,51 +261,61 @@ void draw_filled_triangle_phong(triangle_t* t) {
     }
 }
 
+void draw_textured_triangle (triangle_t* t) {
+    // Work on a local copy so we can sort without mutating the original
+    triangle_t tri = *t;
+    upng_t* texture = tri.texture;
 
+    // Extract y values for sorting
+    int y0 = (int)tri.vertices[0].position.y;
+    int y1 = (int)tri.vertices[1].position.y;
+    int y2 = (int)tri.vertices[2].position.y;
 
-void draw_textured_triangle (
-    int x0, int y0, float z0, float w0, float u0, float v0,
-    int x1, int y1, float z1, float w1, float u1, float v1,
-    int x2, int y2, float z2, float w2, float u2, float v2,
-    upng_t* texture
-) {
+    int x0 = (int)tri.vertices[0].position.x;
+    int x1 = (int)tri.vertices[1].position.x;
+    int x2 = (int)tri.vertices[2].position.x;
+
+    float z0 = tri.vertices[0].position.z;
+    float z1 = tri.vertices[1].position.z;
+    float z2 = tri.vertices[2].position.z;
+
+    float w0 = tri.vertices[0].position.z;
+    float w1 = tri.vertices[1].position.z;
+    float w2 = tri.vertices[2].position.z;
+
+    float u0 = tri.texcoords[0].u;
+    float u1 = tri.texcoords[1].u;
+    float u2 = tri.texcoords[2].u;
+
+    float v0 = tri.texcoords[0].v;
+    float v1 = tri.texcoords[1].v;
+    float v2 = tri.texcoords[2].v;
+
     //////////////////////////////////////////////////////////
     // Sort the vertices (y0 < y1 <y2) ///////////////////////
     //////////////////////////////////////////////////////////
-
-    // Check first and second
     if (y0 > y1) {
-        int_swap(&y0, &y1);
-        int_swap(&x0, &x1);
-
-        float_swap(&z0, &z1);
-        float_swap(&w0, &w1);
-
-        float_swap(&u0, &u1);
-        float_swap(&v0, &v1);
+        int_swap(&y0, &y1); int_swap(&x0, &x1);
+        float_swap(&z0, &z1); float_swap(&w0, &w1);
+        float_swap(&u0, &u1); float_swap(&v0, &v1);
+        vertex_swap(&tri.vertices[0], &tri.vertices[1]);
+        vec4_swap(&tri.cam_vertices[0], &tri.cam_vertices[1]);
     }
-    // Check second and third
     if (y1 > y2) {
-        int_swap(&y1, &y2);
-        int_swap(&x1, &x2);
-
-        float_swap(&z1, &z2);
-        float_swap(&w1, &w2);
-
-        float_swap(&u1, &u2);
-        float_swap(&v1, &v2);
+        int_swap(&y1, &y2); int_swap(&x1, &x2);
+        float_swap(&z1, &z2); float_swap(&w1, &w2);
+        float_swap(&u1, &u2); float_swap(&v1, &v2);
+        vertex_swap(&tri.vertices[1], &tri.vertices[2]);
+        vec4_swap(&tri.cam_vertices[1], &tri.cam_vertices[2]);
     }
-    // Check possible new first and new second
     if (y0 > y1) {
-        int_swap(&y0, &y1);
-        int_swap(&x0, &x1);
-
-        float_swap(&z0, &z1);
-        float_swap(&w0, &w1);
-
-        float_swap(&u0, &u1);
-        float_swap(&v0, &v1);
+        int_swap(&y0, &y1); int_swap(&x0, &x1);
+        float_swap(&z0, &z1); float_swap(&w0, &w1);
+        float_swap(&u0, &u1); float_swap(&v0, &v1);
+        vertex_swap(&tri.vertices[0], &tri.vertices[1]);
+        vec4_swap(&tri.cam_vertices[0], &tri.cam_vertices[1]);
     }
+
 
     // Flip the V component of the texture to account for
     // inverted UV coordinate system
